@@ -1,0 +1,28 @@
+language: ruby
+notifications:
+  email:
+    on_success: change
+    on_failure: always
+
+before_install:
+  - gem update --system $RUBYGEMS_VERSION
+  - gem --version
+  - gem install bundler
+  - bundle --version
+  - mkdir -p tmp/bundle
+
+bundler_args: "--binstubs"
+
+rvm: 
+  - 1.8.7
+  - 1.9.2
+  - 2.0.0
+  - 2.1.0
+  - jruby-head
+  - rbx
+
+matrix:
+  allow_failures:
+    - rvm: 2.1.0
+    - rvm: rbx
+    - rvm: jruby-head
