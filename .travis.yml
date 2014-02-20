@@ -21,6 +21,8 @@ rvm:
   - jruby-head
   - rbx
 
+script: bin/rake build spec install
+
 matrix:
   allow_failures:
     - rvm: 2.1.0
