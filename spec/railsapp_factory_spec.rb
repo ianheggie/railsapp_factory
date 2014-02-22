@@ -66,6 +66,18 @@ describe 'RailsappFactory' do
         @factory.release.should match(/^#{ver}\./)
       end
 
+      it "21: should allow a file to be used as a template" do
+        @railsapp.use_template(File.expand_path('templates/add_file.rb', File.dirname(__FILE__)))
+      end
+
+      it "21: should allow a url to be used as a template" do
+        @railsapp.use_template(File.expand_path('templates/add_another_file.rb', File.dirname(__FILE__)))
+      end
+
+      it "21: should allow text to be appended to template" do
+        @railsapp.append_to_template("file '3rd-file.txt', 'some text'")
+      end
+
       it '30: build should should build the application' do
         @factory.build.should be_true
         @factory.should be_built
@@ -74,19 +86,43 @@ describe 'RailsappFactory' do
       it '40: a rails app should be installed at root' do
         Dir.chdir(@factory.root) do
           system "find . -print | sort"
-          expected = %w{ app config db doc lib log public/stylesheets test tmp }
+          expected = %w{ app config db lib log public test tmp }
           have = expected.select {|d| File.directory?(d) }
           have.should == expected
-          expected = %w{Gemfile Gemfile.lock app/controllers/application_controller.rb
-                      app/views/layouts/application.html.erb config/application.rb config/database.yml
-                      config/routes.rb config/environment.rb  }
+          expected = %w{app/controllers/application_controller.rb
+                      config/database.yml config/environment.rb config/routes.rb  }
           have = expected.select {|fn| File.exists?(fn) }
           have.should == expected
-
         end
       end
 
-     it '50: start should run the application' do
+      it '40: it should have gems installed by bundler' do
+        Dir.chdir(@factory.root) do
+          expected = %w{ Gemfile Gemfile.lock }
+          have = expected.select {|fn| File.exists?(fn) }
+          have.should == expected
+        end
+      end
+
+      it "40: the file template should have been processed" do
+        file = File.join(@factory.root, 'file.txt')
+        File.exists?(file).should be_true
+        File.open(file).read.should =~ /Lorem ipsum/
+      end
+
+      it "40: the url template should have been processed" do
+        file = File.join(@factory.root, 'another-file.txt')
+        File.exists?(file).should be_true
+        File.open(file).read.should =~ /Lorem ipsum/
+      end
+
+      it "40: the text appended to the template should have been processed" do
+        file = File.join(@factory.root, '3rd-file.txt')
+        File.exists?(file).should be_true
+        File.open(file).read.should =~ /some text/
+      end
+
+      it '50: start should run the application' do
         @factory.start.should be_true
         @factory.should be_running
         @factory.port.should > 1024
@@ -97,8 +133,7 @@ describe 'RailsappFactory' do
       end
 
       it '60: the log file should have contents' do
-        @factory.server_logfile.should_not be_nil
-        File.size(@factory.server_logfile).should > 0
+        File.size(File.join(@factory.root, 'log/development.log')).should > 0
       end
 
       it '60: should have a http server running on port' do
