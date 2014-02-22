@@ -13,6 +13,7 @@ describe 'RailsappFactory' do
   describe '::versions' do
 
     it 'should list some rails versions' do
+      puts "RUBY_VERSION = #{RUBY_VERSION}"
       list = RailsappFactory.versions
       list.should be_a_kind_of(Array)
       list.should_not be_empty
