@@ -31,10 +31,16 @@ To test a gem (health_check in this case), run:
    RailsappFactory.versions.each do |version|
      railsapp = RailsappFactory.new(version)  # also accepts "edge"
      railsapp.timeout = 300  # timeout operations after 300 seconds
-     railsapp.template = "url or filename"
-     # This appends to the template, located in a temp file - if the template was already set to a url or file, then that is read in first
+     railsapp.template = File.expand_path('templates/add-file.rb', File.dirname(__FILE__)) # ie full path name
+     # OR
+     railsapp.template = "http://example.com/example.rb"
+
+     # you can also append to the template defined above, or start a custom template from scratch by using
+     # template <<=
+     # A temp file is created containing the combined template information
+
      railsapp.template <<= <<-EOF
-        gem "nokogiri"
+        gem "my_gem_name", :path => '#{File.expand_path('templates/add-file.rb', '..')}'
         bundle install
         generate(:scaffold, "person name:string")
         route "root to: 'people#index'"

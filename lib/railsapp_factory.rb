@@ -6,7 +6,6 @@ require 'tempfile'
 require 'logger'
 
 class RailsappFactory
-  # Your code goes here...
 
   class BuildError < RuntimeError
 
@@ -54,7 +53,9 @@ class RailsappFactory
     @release ||= begin
       cmd = rails_command
       @logger.debug "Getting release using command: #{cmd}"
-      in_app(BASE_PATH) { `#{cmd} '-v'` }.sub(/^Rails */, '')
+      r = in_app(BASE_PATH) { `#{cmd} '-v'` }.sub(/^Rails */, '')
+      @logger.debug "Release: #{r}"
+      r
     end
   end
 
@@ -89,15 +90,15 @@ class RailsappFactory
     other_args <<= ' --edge' if @version == 'edge'
 
     @logger.info "Creating Rails #{@version} app"
-    unless in_app(@base_dir) { system "sh -xc 'time #{rails_command} #{new_arg} railsapp -d #{db} #{other_args}' >> rails_new.log 2>&1" }
+    unless in_app(@base_dir) { system "sh -xc 'time #{rails_command} #{new_arg} railsapp -d #{db} #{other_args}' #{@logger.debug? ? '' : ' >> rails_new.log 2>&1'}" }
       raise BuildError.new("rails #{new_arg}railsapp failed - see rails_new.log")
     end
     raise BuildError.new("error building railsapp - missing files") unless File.exists?(File.join(@root, 'config', 'application.rb'))
     @logger.info "Installing gems using bundle"
-    unless in_app { system "sh -xc 'time bundle install --binstubs .bundle/bin' >> bundle.log 2>&1" }
-        raise BuildError.new("bundle install --binstubs - see bundle.log")
+    unless in_app { system "sh -xc 'time bundle install --binstubs .bundle/bin' #{@logger.debug? ? '' : ' >> bundle.log 2>&1'}"}
+        raise BuildError.new("bundle install --binstubs #{@logger.debug? ? '' : '- see bundle.log'}")
     end
-    raise BuildError.new("error installing gems - see bundle.log") unless File.exists?(File.join(@root, 'Gemfile.lock'))
+    raise BuildError.new("error installing gems #{@logger.debug? ? '' : '- see bundle.log'}") unless File.exists?(File.join(@root, 'Gemfile.lock'))
     @built = true
   end
 
@@ -132,8 +133,8 @@ class RailsappFactory
     file = Tempfile.new("#{@base_dir}/server_log")
     @server_logfile = file.path
     file.close
-    @logger.info "Running Rails #{version} server on port #{port} with output to #{@server_logfile})"
-    in_app { @server_handle = IO.popen("exec /bin/sh -xc 'exec #{server_command} -p #{port}' >> #{@server_logfile} 2>&1", 'w') }
+    @logger.info "Running Rails #{version} server on port #{port}" # with output to #{@server_logfile})"
+    in_app { @server_handle = IO.popen("exec /bin/sh -xc 'exec #{server_command} -p #{port}' #{@logger.debug? ? '' : " >> #{@server_logfile} 2>&1"}", 'w') }
     @pid = @server_handle.pid
     t1 = Time.new
     while true
@@ -143,7 +144,7 @@ class RailsappFactory
       response = Net::HTTP.get(URI(@url)) rescue nil
       if response
         t2 = Time.new
-        @logger.info "Server responsded to http GET after %3.1f seconds" % (t2 - t1)
+        @logger.info "Server responded to http GET after %3.1f seconds" % (t2 - t1)
         @running = true
         break
       end
@@ -158,12 +159,17 @@ class RailsappFactory
   def stop
     if alive?
       if @pid
-        @logger.info "Stopping server (signalling pid #{pid})"
-        system "ps -fp #{@pid}"
+        @logger.info "Stopping server (pid #{pid})"
+        system "ps -fp #{@pid}" if @logger.debug?
         Process.kill('INT', @pid) rescue nil
-        sleep(1)
-        Process.kill('KILL', @pid) if alive?
-        #system "ps -f"
+        20.times do
+          sleep(0.5)
+          break unless alive?
+        end
+        if alive?
+          @logger.info "Gave up waiting (terminating process #{pid} with extreme prejudice)"
+          Process.kill('KILL', @pid) rescue nil
+        end
       end
       @logger.debug "Closing pipe to server process"
       Timeout.timeout(@timeout) do
@@ -213,7 +219,7 @@ class RailsappFactory
           f.puts "gem 'bundler', '~> 1.3'"
         end
         Bundler.with_clean_env do
-          system "sh -xc 'time #{bundle_command} install --binstubs' >> bundle.log 2>&1"
+          system "sh -xc 'time #{bundle_command} install --binstubs' #{@logger.debug? ? '' : ' >> bundle.log 2>&1'}"
         end
       end
       unless File.exists?(rails_path)
