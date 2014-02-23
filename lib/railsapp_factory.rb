@@ -1,4 +1,5 @@
 require 'railsapp_factory/version'
+require 'railsapp_factory/string_inquirer'
 require 'tmpdir'
 require 'bundler'
 require 'fileutils'
@@ -57,13 +58,36 @@ class RailsappFactory
     end
   end
 
+  def self.cleanup
+    FileUtils.rm_rf TMPDIR
+  end
+
+
+  # encodes url query arguments, incl nested
+  def self.encode_query(args, prefix = '', suffix = '')
+    query = ''
+    args.each do |key, value|
+      if value.is_a?(Hash)
+        query <<= RailsappFactory.encode_query(value, "#{prefix}#{key}[", "]#{suffix}")
+      else
+        query <<= '&' << CGI::escape(prefix + key.to_s + suffix) << '=' << CGI::escape(value.to_s)
+      end
+    end if args
+    if prefix == ''
+      query.sub(/^&/, '?')
+    else
+      query
+    end
+  end
+
+
   def root
     @root ||= File.join(base_dir, 'railsapp')
   end
 
   def env
     @_env = nil unless @_env.to_s == @override_ENV['RAILS_ENV']
-    @_env ||= ActiveSupport::StringInquirer.new(@override_ENV["RAILS_ENV"] || @override_ENV["RACK_ENV"] || "test")
+    @_env ||= RailsappFactory::StringInquirer.new(@override_ENV["RAILS_ENV"] || @override_ENV["RACK_ENV"] || "test")
   end
 
   def env=(value)
@@ -345,10 +369,6 @@ EOF
     @built = false
   end
 
-  def self.cleanup
-    FileUtils.rm_rf TMPDIR
-  end
-
   private
 
   def base_dir
@@ -537,23 +557,6 @@ end
       ENV['RAILS_ENV'] = ENV['RACK_ENV'] = rails_env
       @logger.debug "setup_env: setting ENV['RAILS_ENV'] = ENV['RACK_ENV'] = #{rails_env.inspect}"
       yield
-    end
-  end
-
-  # encodes url query arguments, incl nested
-  def self.encode_query(args, prefix = '', suffix = '')
-    query = ''
-    args.each do |key, value|
-      if value.is_a?(Hash)
-        query <<= RailsappFactory.encode_query(value, "#{prefix}#{key}[", "]#{suffix}")
-      else
-        query <<= '&' << CGI::escape(prefix + key.to_s + suffix) << '=' << CGI::escape(value.to_s)
-      end
-    end if args
-    if prefix == ''
-      query.sub(/^&/, '?')
-    else
-      query
     end
   end
 
