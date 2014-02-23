@@ -15,19 +15,19 @@ class RailsappFactory
   TMPDIR = File.expand_path('tmp/railsapps')
 
   attr_reader :version # version requested, may be specific release, or the first part of a release number
-  attr_reader :root # root dir of application
   attr_reader :pid, :running
   attr_reader :port, :url
   attr_reader :template
   attr_accessor :gem_source, :db, :timeout, :logger
 
-  def initialize(version)
+  def initialize(version, logger = Logger.new(STDERR))
     @version = version
+    @logger = logger
     throw ArgumentError.new('Invalid version') if version !~ /^[2-9](\.\d+){1,2}$/
+    @logger.info("RailsappFactory initialized with version #{version}")
     @gem_source = 'https://rubygems.org'
     @db = defined?(JRUBY_VERSION) ? 'jdbcsqlite3' : 'sqlite3'
     @timeout = 300 # 5 minutes
-    @logger = Logger.new(STDERR)
     @files_to_show = ['Gemfile']
     clear_template
   end
@@ -47,13 +47,17 @@ class RailsappFactory
       when /^2\.[01]/
         %w{4.0}
       else
-        [ ]
+        []
     end
+  end
+
+  def root
+    @root ||= File.join(base_dir, 'railsapp')
   end
 
   def use_template(template)
     if @template
-      Dir.chdir(@base_dir) do
+      Dir.chdir(base_dir) do
         append_to_template(open(template).read)
       end
     else
@@ -63,10 +67,12 @@ class RailsappFactory
 
   def append_to_template(text)
     if @readonly_template
-      Dir.chdir(@base_dir) do
-        text = open(@template).read << text
+      if @template
+        Dir.chdir(base_dir) do
+          text = open(@template).read << text
+        end
       end
-      @template = "#{@base_dir}/template.rb"
+      @template = "#{base_dir}/template.rb"
       @readonly_template = false
     end
     open(@template, 'a+') do |f|
@@ -75,13 +81,18 @@ class RailsappFactory
   end
 
 
-  def process_tempolate
+  def process_template
     if @template
-      @logger.info "Processing template #{@template}"
-      unless in_app { system "sh -xc '.bundle/bin/rake rails:template LOCATION=#{@template}' #{@logger.debug? ? '' : ' >> template.log 2>&1'}" }
-        raise BuildError.new("rake rails:template #{@logger.debug? ? '' : ' - see rails_new.log'}")
+      if built?
+        @logger.info "Processing template #{@template}"
+        unless in_app { system "sh -xc '.bundle/bin/rake rails:template LOCATION=#{@template}' #{append_log 'template.log'}" }
+          raise BuildError.new("rake rails:template #{see_log 'rails_new.log'}")
+        end
+        clear_template
+      else
+        # build actions template
+        build
       end
-      clear_template
     end
   end
 
@@ -101,7 +112,7 @@ class RailsappFactory
   end
 
 
-  def in_app(in_directory = @root)
+  def in_app(in_directory = root)
     Bundler.with_clean_env do
       Dir.chdir(in_directory) do
         if @timeout > 0
@@ -116,36 +127,31 @@ class RailsappFactory
   end
 
   def build
-    destroy if @base_dir
-    @built = false
-    FileUtils.mkdir_p TMPDIR
-    @base_dir = Dir.mktmpdir("app-#{@version}", TMPDIR)
-    @root = File.join(@base_dir, 'railsapp')
+    @built = true
     new_arg = version =~ /^[12]/ ? '' : ' new'
     other_args = version =~ /^[12]/ ? '' : '--no-rc' #  '   # --template=TEMPLATE
     other_args <<= ' --edge' if @version == 'edge'
     other_args <<= " -m #{@template}" if @template
-
-    @logger.info "Creating Rails #{@version} app in directory #{@root}"
-    unless in_app(@base_dir) { system "sh -xc '#{rails_command} #{new_arg} railsapp -d #{db} #{other_args}' #{@logger.debug? ? '' : ' >> rails_new.log 2>&1'}" }
-      raise BuildError.new("rails #{new_arg}railsapp failed #{@logger.debug? ? '' : ' - see rails_new.log'}")
+    @logger.info "Creating Rails #{@version} app in directory #{root}"
+    unless in_app(base_dir) { system "sh -xc '#{rails_command} #{new_arg} railsapp -d #{db} #{other_args}' #{append_log 'rails_new.log'}" }
+      raise BuildError.new("rails #{new_arg}railsapp failed #{see_log 'rails_new.log'}")
     end
     clear_template
-    expected_file = File.join(@root, 'config', 'environment.rb')
+    expected_file = File.join(root, 'config', 'environment.rb')
     raise BuildError.new("error building railsapp - missing #{expected_file}") unless File.exists?(expected_file)
 
-    unless File.exists?(File.join(@root, 'Gemfile'))
+    unless File.exists?(File.join(root, 'Gemfile'))
       convert_to_use_bundler
     end
 
     @logger.info "Installing binstubs"
-    unless in_app { system "sh -xc 'bundle install --binstubs .bundle/bin' #{@logger.debug? ? '' : ' >> bundle.log 2>&1'}" }
-      raise BuildError.new("bundle install --binstubs #{@logger.debug? ? '' : '- see bundle.log'}")
+    unless in_app { system "sh -xc 'bundle install --binstubs .bundle/bin' #{append_log 'bundle.log'}" }
+      raise BuildError.new("bundle install --binstubs #{see_log 'bundle.log'}")
     end
-    raise BuildError.new("error installing gems #{@logger.debug? ? '' : '- see bundle.log'}") unless File.exists?(File.join(@root, 'Gemfile.lock'))
+    raise BuildError.new("error installing gems #{see_log 'bundle.log'}") unless File.exists?(File.join(root, 'Gemfile.lock'))
 
     if @logger.debug?
-      Dir.chdir(@root) do
+      Dir.chdir(root) do
         @files_to_show.sort.uniq.each do |f|
           puts "=" * 30, f, "=" * 30
           puts IO.read(f)
@@ -153,8 +159,6 @@ class RailsappFactory
       end
       puts "=" * 30
     end
-
-    @built = true
   end
 
   def alive?
@@ -186,21 +190,21 @@ class RailsappFactory
     server.close
     @url = "http://127.0.0.1:#{port}/"
     unless @logger.debug?
-      file = Tempfile.new("#{@base_dir}/server_log")
+      file = Tempfile.new("#{base_dir}/server_log")
       @server_logfile = file.path
       file.close
     end
-    @logger.info "Running Rails #{version} server on port #{port} " + (@server_logfile ? "with output to #{@server_logfile}" : '')
+    @logger.info "Running Rails #{version} server on port #{port} #{see_log @server_logfile}"
     exec_arg = defined?(JRUBY_VERSION) ? '' : 'exec'
-    in_app { @server_handle = IO.popen("#{exec_arg} /bin/sh -xc 'exec #{server_command} -p #{port}' #{@server_logfile ? " >> #{@server_logfile} 2>&1" : ''}", 'w') }
+    in_app { @server_handle = IO.popen("#{exec_arg} /bin/sh -xc 'exec #{server_command} -p #{port}' #{append_log @server_logfile}", 'w') }
     @pid = @server_handle.pid
     # Detach process so alive? will detect if process dies (zombies still accept signals)
     Process.detach(@pid)
 
     t1 = Time.new
     while true
-      raise TimeoutError.new("Waiting for server to be available on the port #{@server_logfile ? " - see #{@server_logfile}" : ''}") if t1 + @timeout < Time.new
-      raise BuildError.new("Error starting server #{@server_logfile ? " - see #{@server_logfile}" : ''}") unless alive?
+      raise TimeoutError.new("Waiting for server to be available on the port #{see_log @server_logfile}") if t1 + @timeout < Time.new
+      raise BuildError.new("Error starting server #{see_log @server_logfile}") unless alive?
       sleep(1)
       response = Net::HTTP.get(URI(@url)) rescue nil
       if response
@@ -210,7 +214,7 @@ class RailsappFactory
         break
       end
     end
-    system "ps -f" if defined?(JRUBY_VERSION)  #DEBUG
+    system "ps -f" if defined?(JRUBY_VERSION) #DEBUG
     @running
   end
 
@@ -260,8 +264,15 @@ class RailsappFactory
 
   private
 
+  def base_dir
+    @base_dir ||= begin
+      FileUtils.mkdir_p TMPDIR
+      Dir.mktmpdir("app-#{@version}", TMPDIR)
+    end
+  end
+
   def clear_template
-    if @template && ! @readonly_template
+    if @template && !@readonly_template
       FileUtils.rm_f @template + '.used'
       FileUtils.move @template, @template + '.used'
     end
@@ -290,7 +301,7 @@ class RailsappFactory
           f.puts "gem 'bundler', '~> 1.3'"
         end
         Bundler.with_clean_env do
-          system "sh -xc '#{bundle_command} install --binstubs' #{@logger.debug? ? '' : ' >> bundle.log 2>&1'}"
+          system "sh -xc '#{bundle_command} install --binstubs' #{append_log 'bundle.log'}"
         end
       end
       unless File.exists?(rails_path)
@@ -309,7 +320,7 @@ class RailsappFactory
   end
 
   def find_command(script_name, rails_arg)
-    Dir.chdir(@root) do
+    Dir.chdir(root) do
       if File.exists?("script/#{script_name}")
         "bundle exec script/#{script_name}"
       elsif File.exists?('script/generate')
@@ -366,7 +377,7 @@ end
 
   def convert_to_use_bundler
     @logger.info 'Converting railsapp to use bundler'
-    Dir.chdir(@root) do
+    Dir.chdir(root) do
       unless File.exists? 'Gemfile'
 
         file_name = 'config/boot.rb'
@@ -421,6 +432,14 @@ end
 
     end
 
+  end
+
+  def append_log(file)
+    @logger.debug? ? '' : " >> #{file} 2>&1"
+  end
+
+  def see_log(file)
+    @logger.debug? ? '' : " - see #{file}"
   end
 
 

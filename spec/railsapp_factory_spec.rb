@@ -67,11 +67,11 @@ describe 'RailsappFactory' do
       end
 
       it "21: should allow a file to be used as a template" do
-        @factory.use_template(File.expand_path('templates/add_file.rb', File.dirname(__FILE__)))
+        @factory.use_template(File.expand_path('templates/add-file.rb', File.dirname(__FILE__)))
       end
 
       it "21: should allow a url to be used as a template" do
-        @factory.use_template(File.expand_path('templates/add_another_file.rb', File.dirname(__FILE__)))
+        @factory.use_template(File.expand_path('templates/add-another-file.rb', File.dirname(__FILE__)))
       end
 
       it "21: should allow text to be appended to template" do
@@ -79,7 +79,7 @@ describe 'RailsappFactory' do
       end
 
       it '30: build should should build the application' do
-        @factory.build.should be_true
+        @factory.build
         @factory.should be_built
       end
 
@@ -122,6 +122,14 @@ describe 'RailsappFactory' do
         File.open(file).read.should =~ /some text/
       end
 
+      it "40: should allow templates to be processed after build" do
+        @factory.append_to_template("file '4th-file.txt', 'more text'")
+        @factory.process_template
+        file = File.join(@factory.root, '4th-file.txt')
+        File.exists?(file).should be_true
+        File.open(file).read.should =~ /more text/
+      end
+
       it '50: start should run the application' do
         @factory.start.should be_true
         @factory.should be_running
@@ -149,7 +157,7 @@ describe 'RailsappFactory' do
 
     end
 
-    #break # just first for the moment!
+    break unless ENV['TRAVIS_CI']
 
   end
 
