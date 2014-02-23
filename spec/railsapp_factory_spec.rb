@@ -136,17 +136,18 @@ describe 'RailsappFactory' do
         @factory.port.should > 1024
       end
 
-      it '60: the application should be on a non privledged port' do
+      it '60: the application should be on a non privileged port' do
         @factory.port.should > 1024
-      end
-
-      it '60: the log file should have contents' do
-        File.size(File.join(@factory.root, 'log/development.log')).should > 0
       end
 
       it '60: should have a http server running on port' do
         response = Net::HTTP.get(URI(@factory.url))
         response.should be_an_instance_of(String)
+      end
+
+      it '90: the log file should have contents' do
+        @factory.in_app { system "du ; ls -laR log" }
+        File.size(File.join(@factory.root, 'log/development.log')).should > 0
       end
 
       it '99: destroy should remove the root directory' do
@@ -157,7 +158,7 @@ describe 'RailsappFactory' do
 
     end
 
-    break unless ENV['TRAVIS_CI']
+    break unless ENV['TRAVIS'] == 'true'
 
   end
 

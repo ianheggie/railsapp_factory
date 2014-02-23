@@ -80,7 +80,6 @@ class RailsappFactory
     end
   end
 
-
   def process_template
     if @template
       if built?
@@ -403,7 +402,7 @@ end
       end
     end
 
-    file.open('Gemfile', 'w') do |gemfile|
+    File.open('Gemfile', 'w') do |gemfile|
 
       gemfile.puts "source '#{@gem_source}'"
       gemfile.puts "gem 'rails', '#{@release}'"
