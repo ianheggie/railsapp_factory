@@ -91,11 +91,6 @@ File.open('Gemfile', 'a+') do |gemfile|
   end
 end
 
-puts "=" * 50
-puts "Gemfile contains:"
-puts
-puts File.open('Gemfile').read
-puts "=" * 50
 
 # Fix ERROR: 'rake/rdoctask' is obsolete and no longer supported. Use 'rdoc/task' (available in RDoc 2.4.2+) instead.
 # .../railsapp/Rakefile:8
@@ -112,5 +107,9 @@ unless File.exists? bak_name
   end
 end
 
-
+%w{Gemfile config/environment.rb Rakefile}.each do |file|
+  puts "=" * 50,file, "=" * 50
+  puts File.read(file)
+end
+puts "=" * 50
 
