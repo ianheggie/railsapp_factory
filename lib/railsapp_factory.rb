@@ -400,37 +400,31 @@ end
           f.puts RAILS23_CONFIG_PREINITIALIZER
         end
       end
-    end
 
-    File.open('Gemfile', 'w') do |gemfile|
+      File.open('Gemfile', 'w') do |gemfile|
 
-      gemfile.puts "source '#{@gem_source}'"
-      gemfile.puts "gem 'rails', '#{@release}'"
-      if @db == 'sqlite3'
-        gemfile.puts "gem 'sqlite3-ruby', :require => 'sqlite3'"
-      else
+        gemfile.puts "source '#{@gem_source}'"
+        gemfile.puts "gem 'rails', '#{@release}'"
         gemfile.puts "gem '#{@db}', '#{@release}'"
-      end
-      file_name = 'config/environment.rb'
-      bak_name = file_name + '.bak'
-      FileUtils.move file_name, bak_name
-      File.open(bak_name, 'r') do |bak|
-        File.open(file_name, 'w') do |f|
-          while not bak.eof?
-            line = bak.gets
-            if line =~ /^([\s#]*)config.(gem.*)/
-              gemfile.puts "$1$2"
-              f.print '# Moved to Gemfile: '
+        file_name = 'config/environment.rb'
+        bak_name = file_name + '.bak'
+        FileUtils.move file_name, bak_name
+        File.open(bak_name, 'r') do |bak|
+          File.open(file_name, 'w') do |f|
+            while not bak.eof?
+              line = bak.gets
+              if line =~ /^([\s#]*)config.(gem.*)/
+                gemfile.puts "$1$2"
+                f.print '# Moved to Gemfile: '
+              end
+              f.puts line
             end
-            f.puts line
           end
         end
+        @files_to_show <<= file_name
+        @files_to_show <<= 'Gemfile'
       end
-      @files_to_show <<= file_name
-      @files_to_show <<= 'Gemfile'
-
     end
-
   end
 
   def append_log(file)
