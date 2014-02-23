@@ -107,7 +107,7 @@ describe 'RailsappFactory' do
 
       it '25: a rails app should have been installed at root' do
         Dir.chdir(@factory.root) do
-          system "find . -print | sort"
+          Kernel.system "find . -print | sort"
           expected = %w{ app config db lib log public test tmp }
           have = expected.select {|d| File.directory?(d) }
           have.should == expected
@@ -180,7 +180,7 @@ describe 'RailsappFactory' do
       end
 
       it '25: ruby_eval should throw argumenterror on syntax errors' do
-        lambda { @factory.ruby_eval("won't work") }.should raise_error(ArgumentError)
+        lambda { @factory.ruby_eval('def missing_an_arg(=2); end') }.should raise_error(ArgumentError)
       end
 
       it '25: factory.env should allow arbitrary environment variables to be set' do
@@ -203,8 +203,7 @@ describe 'RailsappFactory' do
 
       it '40: start should run the application' do
         @factory.start.should be_true
-        @factory.should be_running
-        @factory.port.should > 1024
+        @factory.should be_alive
       end
 
       it '45: the application should be on a non privileged port' do
@@ -228,7 +227,7 @@ describe 'RailsappFactory' do
       end
 
       it '95: the server log file should have contents' do
-        @factory.system "du ; ls -laR log"
+        @factory.system_in_app "du ; ls -laR log"
         File.size(File.join(@factory.root, "log/#{@factory.env}.log")).should > 0
       end
 

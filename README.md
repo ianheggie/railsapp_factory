@@ -35,11 +35,10 @@ To test a gem (health_check in this case), run:
      # OR
      railsapp.template = "http://example.com/example.rb"
 
-     # you can also append to the template defined above, or start a custom template from scratch by using
-     # template <<=
+     # you can also append to the template defined above, or start a custom template from scratch by using append_to_template
      # A temp file is created containing the combined template information
 
-     railsapp.template <<= <<-EOF
+     railsapp.append_to_template <<-EOF
         gem "my_gem_name", :path => '#{File.expand_path('templates/add-file.rb', '..')}'
         bundle install
         generate(:scaffold, "person name:string")
@@ -50,42 +49,55 @@ To test a gem (health_check in this case), run:
      # following commands return a struct with stdout, stderr and exit_status
      # and an exception is raised if build fails
 
-     puts "Latest version in #{version} series is #{railsapp.version}"
+     puts "Latest version in #{railsapp.release} series is #{railsapp.version}"
+
      railsapp.build   # run,rake,runner,console will all trigger this if you forget
 
-     railsapp.template <<= 'gem "halo"'
+     railsapp.append_to_template 'gem "halo"'
 
-     railsapp.apply_template  # apply template with rake command
+     railsapp.process_template  # apply template with rake command
 
-     #TODO: railsapp.runner 'Some.ruby(code)'
-     #TODO: railsapp.runner 'filename'
-     #TODO: railsapp.console do |f|
-     #TODO:   f.puts "Some.ruby(code)"
-     #TODO:   f.puts "More.ruby(code)"
-     #TODO: end
+     # runs an expression in runner and ruby respectively, and uses to_json to return the result.
+     # exceptions are passed through, except for syntax errors
 
-     #TODO: railsapp.eval 'Some.ruby(code)'  # adds .to_json on the end of the expression, then parses output for json and returns result
+     railsapp.rails_eval 'Some.rails(code)'
+     railsapp.ruby_eval 'Some.ruby(code)'
 
      railsapp.run
 
-     # check server actually ran
+     # check server is actually running
      railsapp.alive?.should be_true
-     #TODO: railsapp.get("/health_check") - returns status same as get in tests
-     #TODO: railsapp.post("/health_check") - returns status same as post in tests
-     puts "url: #{railsapp.url}"
+
+     # some helpers for constructing urls (strings)
+     puts "home url: #{railsapp.url}"
+     puts "url: #{railsapp.url('/search', {:author => {:name => 'fred'}})"
+
+     puts "Instance of URI: #{railsapp.uri('/some/path', :name => 'value')}"
+
      puts "port: #{railsapp.port}"
+
      railsapp.stop
 
+     # override ENV passed to rails app processes
+     railsapp.override_ENV['EDITOR'] = 'vi'
+
      railsapp.in_app do
-       # runs command in rails root dir without the extra environment variables bundler exec sets"
-       system 'some command'
+                 # runs command in rails root dir without the extra environment variables bundler exec sets"
+       system 'some shell command'
      end
+
+     railsapp.system_in_app 'another shell command'
+
      railsapp.destroy
    end
 
    # removes all temp directories - TODO: stop any running servers
    RailsappFactory.cleanup
 
+   # I am considering get/put like integration tests have, but requires some thought first to be non rails version specific
+
+   #TODO: railsapp.get("/some/path") - returns status same as get in tests
+   #TODO: railsapp.post("/another/path", :author => { :name => 'fred' } ) - returns status same as post in tests
 
 
 ## Contributing
