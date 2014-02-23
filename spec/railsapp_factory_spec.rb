@@ -44,6 +44,28 @@ describe 'RailsappFactory' do
 
   end
 
+  describe "::encode_query" do
+
+    it "should encode a simple argument" do
+      RailsappFactory.encode_query(:ian => 23).should == "?ian=23"
+    end
+
+    it "should encode a nested argument" do
+      RailsappFactory.encode_query(:author => {:ian => 23}).should == '?author%5Bian%5D=23'
+    end
+
+    it "should encode a multiple arguments" do
+      res = RailsappFactory.encode_query(:ian => 23, :john => '45')
+      #order not guaranteed
+      if res =~ /^.ian/
+        res.should == '?ian=23&john=45'
+      else
+        res.should == '?john=45&ian=23'
+      end
+    end
+
+  end
+
   RailsappFactory.versions.each do |ver|
 
     context "new(#{ver})" do
@@ -58,32 +80,32 @@ describe 'RailsappFactory' do
         @factory = RailsappFactory.new(ver)
       end
 
-      it "10: new should not build the application" do
+      it "05: new should not build the application" do
         @factory.should_not be_built
       end
 
-      it '20: should pick an appropriate version' do
+      it '10: should pick an appropriate version' do
         @factory.release.should match(/^#{ver}\./)
       end
 
-      it "21: should allow a file to be used as a template" do
+      it "15: should allow a file to be used as a template" do
         @factory.use_template(File.expand_path('templates/add-file.rb', File.dirname(__FILE__)))
       end
 
-      it "21: should allow a url to be used as a template" do
+      it "15: should allow a url to be used as a template" do
         @factory.use_template(File.expand_path('templates/add-another-file.rb', File.dirname(__FILE__)))
       end
 
-      it "21: should allow text to be appended to template" do
-        @factory.append_to_template("file '3rd-file.txt', 'some text'")
+      it "15: should allow text to be appended to template" do
+        @factory.append_to_template("file 'public/file.txt', 'some text'")
       end
 
-      it '30: build should should build the application' do
+      it '20: build should should build the application' do
         @factory.build
         @factory.should be_built
       end
 
-      it '40: a rails app should be installed at root' do
+      it '25: a rails app should have been installed at root' do
         Dir.chdir(@factory.root) do
           system "find . -print | sort"
           expected = %w{ app config db lib log public test tmp }
@@ -96,7 +118,7 @@ describe 'RailsappFactory' do
         end
       end
 
-      it '40: it should have gems installed by bundler' do
+      it '25: it should have gems installed by bundler' do
         Dir.chdir(@factory.root) do
           expected = %w{ Gemfile Gemfile.lock }
           have = expected.select {|fn| File.exists?(fn) }
@@ -104,25 +126,74 @@ describe 'RailsappFactory' do
         end
       end
 
-      it "40: the file template should have been processed" do
+      it "25: the file template should have been processed" do
         file = File.join(@factory.root, 'file.txt')
         File.exists?(file).should be_true
         File.open(file).read.should =~ /Lorem ipsum/
       end
 
-      it "40: the url template should have been processed" do
+      it "25: the url template should have been processed" do
         file = File.join(@factory.root, 'another-file.txt')
         File.exists?(file).should be_true
         File.open(file).read.should =~ /Lorem ipsum/
       end
 
-      it "40: the text appended to the template should have been processed" do
-        file = File.join(@factory.root, '3rd-file.txt')
+      it "25: the text appended to the template should have been processed" do
+        file = File.join(@factory.root, 'public/file.txt')
         File.exists?(file).should be_true
         File.open(file).read.should =~ /some text/
       end
 
-      it "40: should allow templates to be processed after build" do
+      it '25: shell_eval should return stdout' do
+        @factory.shell_eval("date").should =~ /\d\d:\d\d/
+        @factory.shell_eval("env").should =~ /PATH=/
+      end
+
+      it '25: RAILS_ENV should be set to test' do
+        @factory.env.should be_test
+        @factory.env.to_s.should == 'test'
+        @factory.shell_eval("echo $RAILS_ENV").should == "test\n"
+        @factory.shell_eval("echo $RACK_ENV").should == "test\n"
+      end
+
+      it '25: ruby_eval should handle simple values' do
+        @factory.ruby_eval("1 + 2").should == 3
+        @factory.ruby_eval("'a-' + \"string\"" ).should == 'a-string'
+        @factory.ruby_eval("[1, :pear]" ).should == [1, 'pear']
+        @factory.ruby_eval("{ 'apple' => 23 }").should == { 'apple' => 23 }
+      end
+
+      it '25: rails_eval should report rails specific values' do
+        @factory.rails_eval("Rails.env").should == @factory.env.to_s
+      end
+
+      it '25: ruby_eval should not report rails specific values' do
+        lambda { @factory.ruby_eval("Rails.env") }.should raise_error(NameError)
+      end
+
+      it '25: ruby_eval should try and reproduce exceptions thrown' do
+        lambda { @factory.ruby_eval("1 / 0") }.should raise_error(ZeroDivisionError)
+      end
+
+      it '25: ruby_eval should handle require and multi line commands' do
+        @factory.ruby_eval("before = defined?(Net::HTTP)\nrequire 'net/http'\nafter = defined?(Net::HTTP)\n[before, after]").should == [nil, 'constant']
+      end
+
+      it '25: ruby_eval should throw argumenterror on syntax errors' do
+        lambda { @factory.ruby_eval("won't work") }.should raise_error(ArgumentError)
+      end
+
+      it '25: factory.env should allow arbitrary environment variables to be set' do
+        @factory.override_ENV['ARBITRARY_VAR'] = 'some value'
+        @factory.in_app do
+          ENV['ARBITRARY_VAR']
+        end.should == 'some value'
+        @factory.shell_eval("echo $ARBITRARY_VAR").should == "some value\n"
+        @factory.ruby_eval("ENV['ARBITRARY_VAR']").should == "some value"
+        ENV['ARBITRARY_VAR'].should == nil
+      end
+
+      it "30: should allow templates to be processed after build" do
         @factory.append_to_template("file '4th-file.txt', 'more text'")
         @factory.process_template
         file = File.join(@factory.root, '4th-file.txt')
@@ -130,24 +201,35 @@ describe 'RailsappFactory' do
         File.open(file).read.should =~ /more text/
       end
 
-      it '50: start should run the application' do
+      it '40: start should run the application' do
         @factory.start.should be_true
         @factory.should be_running
         @factory.port.should > 1024
       end
 
-      it '60: the application should be on a non privileged port' do
+      it '45: the application should be on a non privileged port' do
         @factory.port.should > 1024
       end
 
-      it '60: should have a http server running on port' do
+      it '45: should have a http server running on port' do
         response = Net::HTTP.get(URI(@factory.url))
         response.should be_an_instance_of(String)
       end
 
-      it '90: the log file should have contents' do
-        @factory.in_app { system "du ; ls -laR log" }
-        File.size(File.join(@factory.root, 'log/development.log')).should > 0
+      it '45: should serve status files' do
+        response = Net::HTTP.get(@factory.uri('file.txt'))
+        response.should be_an_instance_of(String)
+      end
+
+      it '45: should respond with an error for missing paths' do
+        response = Net::HTTP.get_response(@factory.uri('/no_such_path'))
+        response.code.should == '500'
+        response.body.should =~ /No route matches/
+      end
+
+      it '95: the server log file should have contents' do
+        @factory.system "du ; ls -laR log"
+        File.size(File.join(@factory.root, "log/#{@factory.env}.log")).should > 0
       end
 
       it '99: destroy should remove the root directory' do
