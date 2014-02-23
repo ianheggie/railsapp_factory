@@ -58,6 +58,7 @@ unless File.exists? bak_name
 end
 
 # Check what has already been done
+has_source = has_rails_gem = false
 if File.exists? 'Gemfile'
   File.open('Gemfile', 'r').each do |line|
     has_source ||= line =~ /^\s*source\s/
@@ -65,23 +66,51 @@ if File.exists? 'Gemfile'
   end
 end
 
-#update Gemfile based on what is in
+#update Gemfile based on what is in config/environment.rb
 File.open('Gemfile', 'a+') do |gemfile|
-  gemfile.puts "source '#{ENV['GEM_SOURCE'] || 'https://rubygems.org'}'" unless has_source
+  unless has_source
+    gemfile.puts "source '#{ENV['GEM_SOURCE'] || 'https://rubygems.org'}'"
+  end
   unless has_rails_gem
     gemfile.puts "gem 'rails', '#{ENV['RAILS_GEM_VERSION'] || '2.3.18'}'"
     gemfile.puts "gem '#{ENV['DB_GEM'] || 'sqlite3'}'"
   end
+  # copy over other gem definitions
   file_name = 'config/environment.rb'
   bak_name = file_name + '.bak'
+  FileUtils.rm_f bak_name
   FileUtils.move file_name, bak_name
-    File.open(file_name, 'w') do |f|
-      File.open(bak_name, 'r').each do |line|
+  File.open(file_name, 'w') do |f|
+    File.open(bak_name, 'r').each do |line|
       if line =~ /^([\s#]*)config\.(gem.*)/
-        gemfile.puts "$1$2"
+        gemfile.puts "#{$1}#{$2}"
         f.print '# Moved to Gemfile: '
       end
       f.puts line
     end
   end
 end
+
+puts "=" * 50
+puts "Gemfile contains:"
+puts
+puts File.open('Gemfile').read
+puts "=" * 50
+
+# Fix ERROR: 'rake/rdoctask' is obsolete and no longer supported. Use 'rdoc/task' (available in RDoc 2.4.2+) instead.
+# .../railsapp/Rakefile:8
+
+file_name = 'Rakefile'
+bak_name = file_name + '.bak'
+unless File.exists? bak_name
+  FileUtils.move file_name, bak_name
+  File.open(file_name, 'w') do |f|
+    File.open(bak_name, 'r').each do |line|
+      line.sub!(/require 'rake\/rdoctask'/, "#require 'rdoc/task'")
+      f.puts line
+    end
+  end
+end
+
+
+

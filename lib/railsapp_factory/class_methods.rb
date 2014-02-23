@@ -1,3 +1,5 @@
+require 'cgi'
+
 class RailsappFactory
   module ClassMethods
     # encodes url query arguments, incl nested

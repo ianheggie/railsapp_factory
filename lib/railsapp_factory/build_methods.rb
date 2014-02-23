@@ -17,8 +17,11 @@ class RailsappFactory
         process_template
         return false
       end
+      if RUBY_VERSION =~ /^1\.8/
+        self.append_to_template "gem 'json_pure'"
+      end
       if version =~ /^2/
-        self.template = 'templates/use_bundler_with_rails23.rb'
+        self.use_template 'templates/use_bundler_with_rails23.rb'
       end
       new_arg = version =~ /^2/ ? '' : ' new'
       other_args = version =~ /^2/ ? '' : '--no-rc --skip-bundle'
@@ -37,9 +40,9 @@ class RailsappFactory
 
       @logger.info "Installing binstubs"
       unless system_in_app "sh -xc 'bundle install --binstubs .bundle/bin' #{append_log 'bundle.log'}"
-        raise BuildError.new("bundle install --binstubs #{see_log 'bundle.log'}")
+        raise BuildError.new("bundle install --binstubs returned exit status #{$?} #{see_log 'bundle.log'}")
       end
-      raise BuildError.new("error installing gems #{see_log 'bundle.log'}") unless File.exists?(File.join(root, 'Gemfile.lock'))
+      raise BuildError.new("error installing gems - Gemfile.lock missing #{see_log 'bundle.log'}") unless File.exists?(File.join(root, 'Gemfile.lock'))
       true
     end
 
@@ -52,7 +55,7 @@ class RailsappFactory
       @release ||= begin
         cmd = rails_command
         @logger.debug "Getting release using command: #{cmd} '-v'"
-        r = in_app(RailsappFactory::TMPDIR) { `#{cmd} '-v'` }.sub(/^Rails */, '')
+        r = in_app(RailsappFactory::TMPDIR) { `#{cmd} '-v'` }.chomp.sub(/^Rails */, '')
         @logger.debug "Release: #{r}"
         r
       end
@@ -65,11 +68,14 @@ class RailsappFactory
     private
 
     def rails_command
-      bundle_command = Gem.bin_path('bundler', 'bundle')
-      bundle_command = 'bundle' unless bundle_command =~ /bundle/
+      #ruby_command = Gem.ruby
+      #ruby_command = 'ruby' unless ruby_command =~ /\w/
+      #bundle_command = "#{ruby_command} #{Gem.bin_path('bundler', 'bundle')}"
+      bundle_command = 'bundle' # unless bundle_command =~ /bundle/
       rails_cmd_dir = "#{RailsappFactory::TMPDIR}/rails-#{@version}"
       rails_path = "#{rails_cmd_dir}/bin/rails"
-      command = '"%s" "%s"' % [Gem.ruby, rails_path]
+      #command = '"%s" "%s"' % [Gem.ruby, rails_path]
+      command = rails_path
       unless File.exists?(rails_path)
         @logger.info "Creating bootstrap Rails #{@version} as #{rails_path}"
         FileUtils.rm_rf rails_cmd_dir
@@ -87,19 +93,21 @@ class RailsappFactory
       command
     end
 
-    def create_Gemfile(rails_release = nil)
+    def create_Gemfile
       version_spec = (@version == 'edge' ? "github: 'rails/rails'" : @version =~ /\.\d+\./ ? "'#{@version}'" : "'~> #{@version}.0'")
-      File.open("Gemfile", 'w') do |f|
-        f.puts "source '#{@gem_source}'"
-        f.puts "gem 'rails', #{rails_release || version_spec}"
-        f.puts "gem '#{@db}'" if rails_release
-      end
+      gemfile_content = <<-EOF
+        source '#{@gem_source}'
+        gem 'rails', #{version_spec}
+      EOF
+
+      File.open("Gemfile", 'w') {|f| f.puts gemfile_content }
+      @logger.debug "Created Gemfile with: <<\n#{gemfile_content}>>"
     end
 
     def base_dir
       @base_dir ||= begin
         FileUtils.mkdir_p RailsappFactory::TMPDIR
-        Dir.mktmpdir("app-#{@version}", RailsappFactory::TMPDIR)
+        Dir.mktmpdir("app-#{@version.gsub(/\W/,'_')}-", RailsappFactory::TMPDIR)
       end
     end
   end

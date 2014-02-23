@@ -1,3 +1,5 @@
+require 'tempfile'
+
 class RailsappFactory
   module ServerMethods
 
@@ -38,7 +40,7 @@ class RailsappFactory
       @port = server.addr[1]
       server.close
       unless @logger.debug?
-        file = Tempfile.new("#{base_dir}/server_log")
+        file = Tempfile.new("server_log", base_dir)
         @server_logfile = file.path
         file.close
       end

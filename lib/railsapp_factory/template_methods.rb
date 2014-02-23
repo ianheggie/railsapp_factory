@@ -8,7 +8,7 @@ class RailsappFactory
         if built?
           logger.info "Processing template #{@template}"
           unless system_in_app "sh -xc '.bundle/bin/rake rails:template LOCATION=#{@template}' #{append_log 'template.log'}"
-            raise BuildError.new("rake rails:template #{see_log 'rails_new.log'}")
+            raise BuildError.new("rake rails:template returned exist status #{$?} #{see_log 'rails_new.log'}")
           end
           clear_template
         else

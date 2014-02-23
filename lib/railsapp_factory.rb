@@ -1,31 +1,30 @@
+require 'tmpdir'
+require 'bundler'
+require 'fileutils'
+require 'logger'
+require 'open-uri'
+
 require 'railsapp_factory/class_methods'
 
-require 'railsapp_factory/build_error'
 require 'railsapp_factory/build_methods'
 require 'railsapp_factory/helper_methods'
 require 'railsapp_factory/run_in_app_methods'
 require 'railsapp_factory/server_methods'
 require 'railsapp_factory/string_inquirer'
 require 'railsapp_factory/template_methods'
-require 'railsapp_factory/version'
 
-require 'tmpdir'
-require 'bundler'
-require 'fileutils'
-require 'tempfile'
-require 'logger'
-require 'open-uri'
-require 'cgi'
-require 'json'
+require 'railsapp_factory/build_error'
+
+require 'railsapp_factory/version'
 
 class RailsappFactory
 
+  extend RailsappFactory::ClassMethods
   include RailsappFactory::BuildMethods
+  include RailsappFactory::HelperMethods
   include RailsappFactory::RunInAppMethods
   include RailsappFactory::ServerMethods
-  include RailsappFactory::HelperMethods
   include RailsappFactory::TemplateMethods
-  extend RailsappFactory::ClassMethods
 
   TMPDIR = File.expand_path('tmp/railsapps')
 
@@ -45,7 +44,5 @@ class RailsappFactory
     self.env = 'test'
     clear_template
   end
-
-
 
 end

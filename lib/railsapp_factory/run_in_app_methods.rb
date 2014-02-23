@@ -1,3 +1,7 @@
+require 'json'
+require 'yaml'
+require 'tempfile'
+
 class RailsappFactory
   module RunInAppMethods
     def in_app(in_directory = built? ? root : base_dir)
@@ -15,20 +19,22 @@ class RailsappFactory
     end
 
 # returns value from ruby command run in ruby, serialized via to_json to keep to simple values
-    def ruby_eval(expression, evaluate_with = :ruby)
+    def ruby_eval(expression, serialize_with = :json, evaluate_with = :ruby)
       result = nil
-      script_file = Tempfile.new("#{base_dir}/#{evaluate_with}_script")
+
+      evaluate_with = :runner if RUBY_VERSION =~ /^1\.8/ and serialize_with == :json
+      script_file = Tempfile.new("#{evaluate_with}_script", base_dir)
       expression_file = script_file.path
-      json_file = "#{expression_file}.json"
+      output_file = "#{expression_file}.output"
       script_contents = <<-EOF
-      require 'json'; value = begin; def value_of_expression; #{expression}
+      require '#{serialize_with}'; value = begin; def value_of_expression; #{expression}
         end
         { 'value' => value_of_expression }
       rescue Exception => ex
         { 'exception' => ex.class.to_s, 'message' => ex.message, 'backtrace' => ex.backtrace }
       end
-      File.open('#{json_file}', 'w') do |_script_output|
-         _script_output.puts value.to_json
+      File.open('#{output_file}', 'w') do |_script_output|
+         _script_output.puts value.to_#{serialize_with}
       end
       EOF
       script_file.puts script_contents
@@ -42,9 +48,14 @@ class RailsappFactory
                   raise ArgumentError.new("invalid evaluate_with argument")
                 end
       system_in_app "sh -xc '#{command} #{expression_file}' #{append_log('eval.log')}"
-      if File.size?(json_file)
-        res = JSON.parse(File.read(json_file))
-        FileUtils.rm_f json_file
+      @logger.info("#{evaluate_with}_eval of #{expression} returned exit status of #{$?}")
+      if File.size?(output_file)
+        res = if serialize_with == :json
+                JSON.parse(File.read(output_file))
+              else
+                YAML.load_file(output_file)
+              end
+        FileUtils.rm_f output_file
         if res.include? 'value'
           result = res['value']
         elsif res.include? 'exception'
@@ -57,15 +68,15 @@ class RailsappFactory
           raise result
         end
       else
-        result = ArgumentError.new("unknown error, probably syntax (missing #{json_file}) #{see_log('eval.log')}")
+        result = ArgumentError.new("unknown error, probably syntax (missing #{output_file}) #{see_log('eval.log')}")
         raise result
       end
       result
     end
 
 # returns value from expression passed to runner, serialized via to_json to keep to simple values
-    def rails_eval(expression)
-      ruby_eval(expression, :runner)
+    def rails_eval(expression, serialize_with = :json)
+      ruby_eval(expression, serialize_with, :runner)
     end
 
     def shell_eval(*args)

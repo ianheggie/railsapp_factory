@@ -167,8 +167,11 @@ describe 'RailsappFactory' do
         @factory.rails_eval("Rails.env").should == @factory.env.to_s
       end
 
-      it '25: ruby_eval should not report rails specific values' do
-        lambda { @factory.ruby_eval("Rails.env") }.should raise_error(NameError)
+      if RUBY_VERSION !~ /^1\.8/
+        # ruby_eval uses runner for ruby 1.8.7
+        it '25: ruby_eval should not report rails specific values' do
+          lambda { @factory.ruby_eval("Rails.env") }.should raise_error(NameError)
+        end
       end
 
       it '25: ruby_eval should try and reproduce exceptions thrown' do
@@ -176,11 +179,19 @@ describe 'RailsappFactory' do
       end
 
       it '25: ruby_eval should handle require and multi line commands' do
-        @factory.ruby_eval("before = defined?(Net::HTTP)\nrequire 'net/http'\nafter = defined?(Net::HTTP)\n[before, after]").should == [nil, 'constant']
+        @factory.ruby_eval("before = 123\nrequire 'cgi'\nafter = defined?(CGI)\n[before,after]").should == [123, 'constant']
       end
 
       it '25: ruby_eval should throw argumenterror on syntax errors' do
         lambda { @factory.ruby_eval('def missing_an_arg(=2); end') }.should raise_error(ArgumentError)
+      end
+
+      it '25: ruby_eval allows choice of :yaml' do
+        @factory.ruby_eval("Set.new([1,2])", :yaml).should == Set.new([1,2])
+      end
+
+      it '25: ruby_eval by default uses :json which converst objects to simple types' do
+        @factory.ruby_eval("Set.new([1,2])", :json).should == [1,2]
       end
 
       it '25: factory.env should allow arbitrary environment variables to be set' do
@@ -222,7 +233,7 @@ describe 'RailsappFactory' do
 
       it '45: should respond with an error for missing paths' do
         response = Net::HTTP.get_response(@factory.uri('/no_such_path'))
-        response.code.should == '500'
+        %w{404 500}.should include(response.code)
         response.body.should =~ /No route matches/
       end
 
