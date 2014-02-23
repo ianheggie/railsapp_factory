@@ -27,9 +27,9 @@ describe 'RailsappFactory' do
 
     # taken from http://www.devalot.com/articles/2012/03/ror-compatibility
     {
-        '1.8.6' => %w{2.3 },
+        '1.8.6' => %w{2.3},
         '1.8.7' => %w{2.3 3.0 3.1 3.2},
-        '1.9.1' => %w{2.3 },
+        '1.9.1' => %w{2.3},
         '1.9.2' => %w{3.0 3.1 3.2},
         '1.9.3' => %w{3.0 3.1 3.2 4.0},
         '2.0.x' => %w{4.0}
