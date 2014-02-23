@@ -67,15 +67,15 @@ describe 'RailsappFactory' do
       end
 
       it "21: should allow a file to be used as a template" do
-        @railsapp.use_template(File.expand_path('templates/add_file.rb', File.dirname(__FILE__)))
+        @factory.use_template(File.expand_path('templates/add_file.rb', File.dirname(__FILE__)))
       end
 
       it "21: should allow a url to be used as a template" do
-        @railsapp.use_template(File.expand_path('templates/add_another_file.rb', File.dirname(__FILE__)))
+        @factory.use_template(File.expand_path('templates/add_another_file.rb', File.dirname(__FILE__)))
       end
 
       it "21: should allow text to be appended to template" do
-        @railsapp.append_to_template("file '3rd-file.txt', 'some text'")
+        @factory.append_to_template("file '3rd-file.txt', 'some text'")
       end
 
       it '30: build should should build the application' do
@@ -149,7 +149,7 @@ describe 'RailsappFactory' do
 
     end
 
-    break # just first for the moment!
+    #break # just first for the moment!
 
   end
 
