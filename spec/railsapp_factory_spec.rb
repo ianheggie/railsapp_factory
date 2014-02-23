@@ -182,7 +182,7 @@ describe 'RailsappFactory' do
         @factory.ruby_eval("before = 123\nrequire 'cgi'\nafter = defined?(CGI)\n[before,after]").should == [123, 'constant']
       end
 
-      it '25: ruby_eval should throw argumenterror on syntax errors' do
+      it '25: ruby_eval should throw argument error on syntax errors' do
         lambda { @factory.ruby_eval('def missing_an_arg(=2); end') }.should raise_error(ArgumentError)
       end
 
@@ -190,8 +190,14 @@ describe 'RailsappFactory' do
         @factory.ruby_eval("Set.new([1,2])", :yaml).should == Set.new([1,2])
       end
 
-      it '25: ruby_eval by default uses :json which converst objects to simple types' do
-        @factory.ruby_eval("Set.new([1,2])", :json).should == [1,2]
+      it '25: ruby_eval by default uses :json which converts non simple objects to either their class name or a simple object' do
+        ret = @factory.ruby_eval("Set.new([1,2])", :json)
+        if ret.is_a? Array
+          ret.should == [1,2]
+        else
+          ret.should be_kind_of(String)
+          ret.should match(/#<Set:0x\w+>/)
+        end
       end
 
       it '25: factory.env should allow arbitrary environment variables to be set' do
