@@ -18,7 +18,10 @@ class RailsappFactory
         return false
       end
       if RUBY_VERSION =~ /^1\.8/
-        self.append_to_template "gem 'json_pure'"
+        self.use_template 'templates/add_json_pure.rb'
+        if version =~ /^3\.[12]/
+          self.use_template 'templates/add_javascript_runtime.rb'
+        end
       end
       if version =~ /^2/
         self.use_template 'templates/use_bundler_with_rails23.rb'
@@ -94,7 +97,15 @@ class RailsappFactory
     end
 
     def create_Gemfile
-      version_spec = (@version == 'edge' ? "github: 'rails/rails'" : @version =~ /\.\d+\./ ? "'#{@version}'" : "'~> #{@version}.0'")
+      version_spec = if @version == 'edge'
+                       "github: 'rails/rails'"
+                     elsif @version == '2.3-lts'
+                       ":git => 'git://github.com/makandra/rails.git', :branch => '2-3-lts'"
+                     elsif @version =~ /\.\d+\./
+                       "'#{@version}'"
+                     else
+                       "'~> #{@version}.0'"
+                     end
       gemfile_content = <<-EOF
         source '#{@gem_source}'
         gem 'rails', #{version_spec}

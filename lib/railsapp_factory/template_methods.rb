@@ -6,8 +6,12 @@ class RailsappFactory
     def process_template
       if @template
         if built?
-          logger.info "Processing template #{@template}"
-          unless system_in_app "sh -xc '.bundle/bin/rake rails:template LOCATION=#{@template}' #{append_log 'template.log'}"
+          template_path = @template
+          if @template != /^https?:/ && @template != /^\//
+            template_path = File.expand_path(template_path, '.')
+          end
+          logger.info "Processing template #{template_path}"
+          unless system_in_app "sh -xc '.bundle/bin/rake rails:template LOCATION=#{template_path}' #{append_log 'template.log'}"
             raise BuildError.new("rake rails:template returned exist status #{$?} #{see_log 'rails_new.log'}")
           end
           clear_template
