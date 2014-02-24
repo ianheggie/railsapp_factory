@@ -101,9 +101,15 @@ class RailsappFactory
         rails_env = self.env.to_s
         ENV['RAILS_ENV'] = ENV['RACK_ENV'] = rails_env
         @logger.debug "setup_env: setting ENV['RAILS_ENV'] = ENV['RACK_ENV'] = #{rails_env.inspect}"
-        ENV['GEM_SOURCE'] = @gem_source
-        ENV['RAILS_GEM_VERSION'] = @release
-        ENV['DB_GEM'] = @db
+        ENV['RAILS_LTS'] = if @version =~ /lts/ then
+                             'true'
+                           elsif @version =~ /^2\.3/
+                             'false'
+                           else
+                             nil
+                           end
+        ENV['GEM_SOURCE'] = @gem_source if ENV['RAILS_LTS']
+        @logger.debug "setup_env: setting ENV['GEM_SOURCE'] = #{@gem_source.inspect}, ENV['RAILS_LTS'] = #{ENV['RAILS_LTS'].inspect}" if ENV['RAILS_LTS']
         yield
       end
     end

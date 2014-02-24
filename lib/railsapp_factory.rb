@@ -35,7 +35,7 @@ class RailsappFactory
   def initialize(version, logger = Logger.new(STDERR))
     @version = version
     @logger = logger
-    throw ArgumentError.new('Invalid version') if version !~ /^[2-9](\.\d+){1,2}$/
+    throw ArgumentError.new('Invalid version') if version !~ /^[2-9](\.\d+){1,2}(-lts)?$/
     @logger.info("RailsappFactory initialized with version #{version}")
     @gem_source = 'https://rubygems.org'
     @db = defined?(JRUBY_VERSION) ? 'jdbcsqlite3' : 'sqlite3'

@@ -1,4 +1,12 @@
-# tempplate as per http://bundler.io/v1.5/rails23.html
+# Template to
+# 1. update rails 2.3 to using bundler as per http://bundler.io/v1.5/rails23.html
+#    - copies gem details from config/environment.rb to Gemfile and comments them out in environment.rb file
+# 2. fix broken require in Rakefile
+# 3. update to rails-lts (unless RAILS_LTS env var is set to false)
+#
+# Template is safe to apply multiple times
+
+
 
 file 'config/preinitializer.rb', <<-EOF
 
@@ -44,25 +52,36 @@ end
 EOF
 
 file_name = 'config/boot.rb'
-bak_name = file_name + '.without_bundler'
-unless File.exists? bak_name
-  FileUtils.move file_name, bak_name
-  File.open(file_name, 'w') do |f|
-    File.open(bak_name, 'r').each do |line|
-      if line =~ /Rails.boot!/
-        f.puts INSERT_INTO_BOOT
+mentions_bundler = false
+File.open(file_name).each do |line|
+  mentions_bundler ||= line =~ /Bundler\./
+end
+
+unless mentions_bundler
+  puts "    updating  #{file_name} - inserting bundler code"
+  bak_name = file_name + '.without_bundler'
+  unless File.exists? bak_name
+    FileUtils.move file_name, bak_name
+    File.open(file_name, 'w') do |f|
+      File.open(bak_name).each do |line|
+        if line =~ /Rails.boot!/
+          f.puts INSERT_INTO_BOOT
+        end
+        f.puts line
       end
-      f.puts line
     end
   end
 end
 
 # Check what has already been done
-has_source = has_rails_gem = false
+has_source = false
+has_gem = { }
 if File.exists? 'Gemfile'
   File.open('Gemfile', 'r').each do |line|
     has_source ||= line =~ /^\s*source\s/
-    has_rails_gem ||= line =~ /^\s*gem\s+['"]rails['"]/
+    if line =~ /^\s*gem\s+['"]([^'"]+)['"]/
+      has_gem[$1] = line
+    end
   end
 end
 
@@ -71,10 +90,44 @@ File.open('Gemfile', 'a+') do |gemfile|
   unless has_source
     gemfile.puts "source '#{ENV['GEM_SOURCE'] || 'https://rubygems.org'}'"
   end
-  unless has_rails_gem
-    gemfile.puts "gem 'rails', '#{ENV['RAILS_GEM_VERSION'] || '2.3.18'}'"
-    gemfile.puts "gem '#{ENV['DB_GEM'] || 'sqlite3'}'"
+
+  # make sure rails is in the gem list
+  unless has_gem['rails']
+    rails_gem_version = nil
+    open('config/environment.rb').each do |line|
+      if line =~ /^RAILS_GEM_VERSION\s*=\s*\D(2\.3\.\d+)\D/
+        rails_gem_version = $1
+      end
+    end
+    rails_gem_version ||= '2.3.18'
+
+    if ENV['RAILS_LTS'] == 'false'
+      # a different version has been deliberately picked
+      has_gem['rails'] = "gem 'rails', '#{rails_gem_version}'"
+      gemfile.puts has_gem['rails']
+      puts "    updating  Gemfile - adding rails gem #{rails_gem_version}"
+    else
+      has_gem['rails'] = "gem 'rails', :git => 'git://github.com/makandra/rails.git', :branch => '2-3-lts'"
+      gemfile.puts has_gem['rails']
+      if rails_gem_version != '2.3.18'
+        puts "WARNING - RAILS_GEM_VERSION needs to be updated to 2.3.18 in config/environment.rb!"
+      end
+      puts "    updating  Gemfile - adding rails gem #{rails_gem_version}-lts"
+    end
   end
+
+  # make sure database adapters are in the list
+  open('config/database.yml').each do |line|
+    if line =~ /^\s*adapter:\s*['"]?([^'"\s]+)/
+      adapter = $1
+      unless has_gem[adapter]
+        gemfile.puts "gem '#{adapter}'  # used in database.yml"
+        puts "    updating  Gemfile - adding #{adapter} gem # used in database.yml"
+        has_gem[adapter] = true
+      end
+    end
+  end
+
   # copy over other gem definitions
   file_name = 'config/environment.rb'
   bak_name = file_name + '.bak'
@@ -83,14 +136,29 @@ File.open('Gemfile', 'a+') do |gemfile|
   File.open(file_name, 'w') do |f|
     File.open(bak_name, 'r').each do |line|
       if line =~ /^([\s#]*)config\.(gem.*)/
-        gemfile.puts "#{$1}#{$2}"
+        prefix = $1
+        command = $2
+        prefix.sub!(/^\s+/, '')
+        command.sub!(/:version *=>/, ' ')
+        command.sub!(/:lib/, ':require')
+        if line =~ /^\s*config.gem\s+['"]([^'"]+)['"]/
+          prefix = "# " if has_gem[$1]
+          has_gem[$1] = line
+          puts "    updating  Gemfile - adding #{$1} gem" if prefix !~ /#/
+        end
+        gemfile.puts "#{prefix}#{command} # converted from: #{line}"
         f.print '# Moved to Gemfile: '
       end
       f.puts line
     end
   end
-end
 
+  unless has_gem['json_pure']
+    gemfile.puts "gem 'json_pure'  # used by RailsapFactory *_eval methods"
+    puts "    updating  Gemfile - adding json_pure gem # used by RailsapFactory *_eval methods"
+  end
+
+end
 
 # Fix ERROR: 'rake/rdoctask' is obsolete and no longer supported. Use 'rdoc/task' (available in RDoc 2.4.2+) instead.
 # .../railsapp/Rakefile:8
@@ -101,7 +169,10 @@ unless File.exists? bak_name
   FileUtils.move file_name, bak_name
   File.open(file_name, 'w') do |f|
     File.open(bak_name, 'r').each do |line|
-      line.sub!(/require 'rake\/rdoctask'/, "#require 'rdoc/task'")
+      if line =~ /rake.rdoctask/
+        line = "# require 'rdoc/task' # replaces outs of date: #{line}"
+        puts "    updating Rakefile - fixing rake/rdoctask line"
+      end
       f.puts line
     end
   end
@@ -111,5 +182,5 @@ end
   puts "=" * 50,file, "=" * 50
   puts File.read(file)
 end
-puts "=" * 50
+puts "=" * 50,'END OF TEMPLATE'
 

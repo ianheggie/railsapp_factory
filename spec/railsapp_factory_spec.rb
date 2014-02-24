@@ -27,17 +27,18 @@ describe 'RailsappFactory' do
 
     # taken from http://www.devalot.com/articles/2012/03/ror-compatibility
     {
+        '1.something' => [ ],
         '1.8.6' => %w{2.3},
-        '1.8.7' => %w{2.3 3.0 3.1 3.2},
+        '1.8.7' => %w{2.3 2.3-lts 3.0 3.1 3.2},
         '1.9.1' => %w{2.3},
         '1.9.2' => %w{3.0 3.1 3.2},
         '1.9.3' => %w{3.0 3.1 3.2 4.0},
-        '2.0.x' => %w{4.0}
+        '2.0.x' => %w{4.0},
+        'unknown' =>  %w{4.0}
     }.each do |ruby_v, expected|
       it "should list rails versions that are compatible with ruby #{ruby_v}" do
         list = RailsappFactory.versions(ruby_v)
         list.should be_a_kind_of(Array)
-        list.should_not be_empty
         list.should == expected
       end
     end
@@ -68,11 +69,13 @@ describe 'RailsappFactory' do
 
   RailsappFactory.versions.each do |ver|
 
+    #next unless ver =~ /lts/
+
     context "new(#{ver})" do
       # ordered tests
       RSpec.configure do |config|
         config.order_groups_and_examples do |list|
-          list.sort_by { |item| item.description }
+          list.sort_by { |item| item.description[0,2] }
         end
       end
 
@@ -85,15 +88,19 @@ describe 'RailsappFactory' do
       end
 
       it '10: should pick an appropriate version' do
-        @factory.release.should match(/^#{ver}\./)
+        if ver =~ /2.3-lts/
+          @factory.release.should == '2.3.18'
+        else
+          @factory.release.should match(/^#{ver}\./)
+        end
       end
 
       it "15: should allow a file to be used as a template" do
-        @factory.use_template(File.expand_path('templates/add-file.rb', File.dirname(__FILE__)))
+        @factory.use_template('spec/templates/add-file.rb')
       end
 
       it "15: should allow a url to be used as a template" do
-        @factory.use_template(File.expand_path('templates/add-another-file.rb', File.dirname(__FILE__)))
+        @factory.use_template('https://raw2.github.com/ianheggie/railsapp_factory/master/spec/templates/add-another-file.rb')
       end
 
       it "15: should allow text to be appended to template" do
@@ -210,13 +217,22 @@ describe 'RailsappFactory' do
         ENV['ARBITRARY_VAR'].should == nil
       end
 
-      it "30: should allow templates to be processed after build" do
+      it "30: should allow appended templates to be processed after build" do
         @factory.append_to_template("file '4th-file.txt', 'more text'")
         @factory.process_template
         file = File.join(@factory.root, '4th-file.txt')
         File.exists?(file).should be_true
         File.open(file).read.should =~ /more text/
       end
+
+      it "30: should allow template files to be processed after build" do
+        @factory.use_template('spec/templates/add-yet-another-file.rb')
+        @factory.process_template
+        file = File.join(@factory.root, 'yet-another-file.txt')
+        File.exists?(file).should be_true
+        File.open(file).read.should =~ /a short poem/
+      end
+
 
       it '40: start should run the application' do
         @factory.start.should be_true
@@ -256,7 +272,7 @@ describe 'RailsappFactory' do
 
     end
 
-    break unless ENV['TRAVIS'] == 'true'
+    #break unless ENV['TRAVIS'] == 'true'
 
   end
 

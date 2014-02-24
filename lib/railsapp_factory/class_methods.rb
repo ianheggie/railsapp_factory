@@ -28,7 +28,7 @@ class RailsappFactory
         when /^1\.8\.6/
           %w{2.3}
         when /^1\.8\.7/
-          %w{2.3 3.0 3.1 3.2}
+          %w{2.3 2.3-lts 3.0 3.1 3.2}
         when /^1\.9\.1/
           %w{2.3}
         when /^1\.9\.2/
@@ -37,8 +37,10 @@ class RailsappFactory
           %w{3.0 3.1 3.2 4.0}
         when /^2\.[01]/
           %w{4.0}
+        when /^1\./
+          [ ]
         else
-          []
+          %w{4.0}   # a guess!
       end
     end
 
