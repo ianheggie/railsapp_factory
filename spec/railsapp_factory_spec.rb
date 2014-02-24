@@ -34,12 +34,63 @@ describe 'RailsappFactory' do
         '1.9.2' => %w{3.0 3.1 3.2},
         '1.9.3' => %w{3.0 3.1 3.2 4.0},
         '2.0.x' => %w{4.0},
-        'unknown' =>  %w{4.0}
+        'unknown' =>  %w{4.0},
+        '' => %w{2.3 2.3-lts 3.0 3.1 3.2 4.0}
     }.each do |ruby_v, expected|
       it "should list rails versions that are compatible with ruby #{ruby_v}" do
         list = RailsappFactory.versions(ruby_v)
         list.should be_a_kind_of(Array)
         list.should == expected
+      end
+    end
+
+  end
+
+  describe '::rubies' do
+
+    it 'should list some ruby versions' do
+      puts "RUBY_VERSION = #{RUBY_VERSION}"
+      list = RailsappFactory.rubies
+      list.should be_a_kind_of(Array)
+      list.should_not be_empty
+    end
+
+    it 'should return an empty list for unknown rails versions' do
+      list = RailsappFactory.rubies('1.5.0')
+      list.should be_a_kind_of(Array)
+      list.should be_empty
+    end
+
+    RailsappFactory.versions('').each do |rails_v|
+      it "should only list ruby versions that are compatible with rails #{rails_v}" do
+        RailsappFactory.rubies(rails_v).each do |ruby_v|
+          RailsappFactory.versions(ruby_v).should include(rails_v)
+        end
+      end
+    end
+  end
+
+  describe "::ruby_command_prefix" do
+
+    RailsappFactory.rubies.each do |ruby_v|
+      it "provides a command prefix that will run ruby #{ruby_v}" do
+        prefix = RailsappFactory.ruby_command_prefix(ruby_v)
+        prefix_string = ruby_v.sub(/^([a-zA-Z]*).*/, '\1')
+        if prefix_string == 'rbx'
+          prefix_string = 'rubinius'
+        elsif prefix_string === ''
+          prefix_string = 'ruby'
+        end
+        ver_string = ruby_v.sub(/^\D*([\d\.]*).*/, '\1')
+        patch_string = if ruby_v =~ /.*?-p(\d+).*/
+                         "#{$1}"
+                       end
+        puts "RailsappFactory.ruby_command_prefix(#{ruby_v}) = '#{prefix}'"
+        actual_ruby_v=`#{prefix} ruby -v`
+        puts "Matching #{prefix_string.inspect}, #{ver_string.inspect}, #{patch_string.inspect}"
+        actual_ruby_v.should include(ver_string)
+        actual_ruby_v.should include(patch_string) if patch_string
+        actual_ruby_v.should include(prefix_string)
       end
     end
 

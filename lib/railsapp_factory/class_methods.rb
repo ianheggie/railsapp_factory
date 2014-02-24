@@ -38,11 +38,67 @@ class RailsappFactory
         when /^2\.[01]/
           %w{4.0}
         when /^1\./
-          [ ]
+          []
+        when ''
+          # all
+          %w{2.3 2.3-lts 3.0 3.1 3.2 4.0}
         else
-          %w{4.0}   # a guess!
+          %w{4.0} # a guess!
+      end
+    end
+
+    def rubies(rails_v = nil)
+      # discover rvm / rbenv commands
+      RailsappFactory.ruby_command_prefix_template
+      result = if File.exists?(@@rbenv_path)
+                 `#{@@rbenv_path} versions --bare`
+               elsif File.exists?(@@rvm_path)
+                 `#{@@rvm_path} list strings`
+               else
+                 ''
+               end.split(/\r?\n/)
+      if rails_v.nil?
+        result
+      else
+        rails_v_compare = rails_v.sub(/^(\d+\.\d+).*?(-lts)?$/, '\1\2')
+        result.select do |ruby_v|
+          rails_v.nil? || RailsappFactory.versions(ruby_v).include?(rails_v_compare)
+        end
+      end
+
+    end
+
+    def ruby_command_prefix(ruby_v = nil)
+      if ruby_v.to_s == ''
+        ''
+      else
+        RailsappFactory.ruby_command_prefix_template % ruby_v.to_s
+      end
+    end
+
+    def ruby_command_prefix_template
+      @@ruby_command_prefix_template ||= begin
+        if ENV['RBENV_ROOT']
+          @@rbenv_path = "#{ENV['RBENV_ROOT']}/bin/rbenv"
+        elsif ENV['rvm_path']
+          @@rvm_path = "#{ENV['rvm_path']}/bin/rbenv"
+        else
+          ENV['PATH'].split(':').each do |exec_path|
+            @@rbenv_path = "#{$1}/bin/rbenv" if exec_path =~ /^(.*\/\.?rbenv)\/(bin|versions)/
+            @@rvm_path = "#{$1}/bin/rbenv" if exec_path =~ /^(.*\/\.?rvm)\/(bin|versions)/
+            break if @@rbenv_path || @@rvm_path
+          end
+        end
+        if @@rbenv_path
+          "env 'RBENV_VERSION=%s' #{@@rbenv_path} exec"
+        elsif @@rvm_path
+          "#{@@rvm_path} '%s' do"
+        else
+          ''
+        end
       end
     end
 
   end
+
 end
