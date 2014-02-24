@@ -108,3 +108,6 @@ To test a gem (health_check in this case), run:
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
 
+## License
+
+MIT - See LICENSE.txt
