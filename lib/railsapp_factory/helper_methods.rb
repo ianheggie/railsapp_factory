@@ -17,7 +17,11 @@ class RailsappFactory
 
     def env
       @_env = nil unless @_env.to_s == @override_ENV['RAILS_ENV']
-      @_env ||= RailsappFactory::StringInquirer.new(@override_ENV["RAILS_ENV"] || @override_ENV["RACK_ENV"] || "test")
+      @_env ||= RailsappFactory::StringInquirer.new(@override_ENV['RAILS_ENV'] || @override_ENV['RACK_ENV'] || 'test')
+    end
+
+    def rubies(rails_v = @version)
+      RailsappFactory.rubies(rails_v)
     end
 
     private
@@ -40,28 +44,36 @@ class RailsappFactory
       @logger.debug? ? '' : " >> #{file} 2>&1"
     end
 
+    def bundle_command
+      "#{RailsappFactory.ruby_command_prefix(@using)} bundle"
+    end
+
+    def ruby_command(bundled = true)
+      "#{RailsappFactory.ruby_command_prefix(@using)} #{bundled ? 'bundle exec' : ''} ruby"
+    end
+
     def find_command(script_name, rails_arg)
       Dir.chdir(root) do
         if File.exists?("script/#{script_name}")
-          "bundle exec script/#{script_name}"
+          "#{bundle_command} exec script/#{script_name}"
         elsif File.exists?('script/rails')
-          "bundle exec script/rails #{rails_arg}"
+          "#{bundle_command} exec script/rails #{rails_arg}"
         else
-          ".bundle/bin/rails #{rails_arg}"
+          "#{ruby_command(false)} .bundle/bin/rails #{rails_arg}"
         end
       end
     end
 
     def generate_command
-      find_command("generate", "generate")
+      find_command('generate', 'generate')
     end
 
     def runner_command
-      find_command("runner", "runner")
+      find_command('runner', 'runner')
     end
 
     def server_command
-      find_command("server", "server")
+      find_command('server', 'server')
     end
 
   end

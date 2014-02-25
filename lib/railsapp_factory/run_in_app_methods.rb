@@ -4,6 +4,23 @@ require 'tempfile'
 
 class RailsappFactory
   module RunInAppMethods
+
+    attr_reader :using
+
+    def use(ruby_v)
+      if block_given?
+        begin
+          orig_using = @using
+          @using = ruby_v.to_s
+          yield
+        ensure
+          @using = orig_using
+        end
+      else
+        @using = ruby_v.to_s
+      end
+    end
+
     def in_app(in_directory = built? ? root : base_dir)
       Dir.chdir(in_directory) do
         setup_env do
@@ -41,11 +58,11 @@ class RailsappFactory
       script_file.close
       @logger.debug "#{evaluate_with}_eval running script #{expression_file} #{see_log('eval.log')}"
       command = if evaluate_with == :ruby
-                  'bundle exec ruby'
+                  ruby_command(bundled?)
                 elsif evaluate_with == :runner
                   runner_command
                 else
-                  raise ArgumentError.new("invalid evaluate_with argument")
+                  raise ArgumentError.new('invalid evaluate_with argument')
                 end
       system_in_app "sh -xc '#{command} #{expression_file}' #{append_log('eval.log')}"
       @logger.info("#{evaluate_with}_eval of #{expression} returned exit status of #{$?}")
@@ -80,16 +97,28 @@ class RailsappFactory
     end
 
     def shell_eval(*args)
-      arg = args.count == 1 ? args.first : args
+      arg = prepend_ruby_version_command_to_arg(args)
       in_app { IO.popen(arg, 'r').read }
     end
 
-    def system_in_app(*args)
-      in_app { Kernel.system(*args) }
+    def prepend_ruby_version_command_to_arg(args)
+      arg = args.count == 1 ? args.first : args
+      command_prefix = RailsappFactory.ruby_command_prefix(@using)
+      if arg.kind_of?(Array)
+        arg = command_prefix.split(' ') + arg
+      else
+        arg = "#{command_prefix} #{arg}"
+      end
+      arg
     end
 
+    def system_in_app(*args)
+      arg = prepend_ruby_version_command_to_arg(args)
+      in_app { Kernel.system(arg) }
+    end
 
     private
+
     def setup_env
       Bundler.with_clean_env do
         @override_ENV.each do |key, value|
@@ -110,6 +139,10 @@ class RailsappFactory
                            end
         ENV['GEM_SOURCE'] = @gem_source if ENV['RAILS_LTS']
         @logger.debug "setup_env: setting ENV['GEM_SOURCE'] = #{@gem_source.inspect}, ENV['RAILS_LTS'] = #{ENV['RAILS_LTS'].inspect}" if ENV['RAILS_LTS']
+        #if @using != '' && RailsappFactory.rbenv?
+        #ENV['RBENV_VERSION'] = @using
+        #@logger.debug "setup_env: setting ENV['RBENV_VERSION'] = #{@using.inspect}"
+        #end
         yield
       end
     end

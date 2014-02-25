@@ -48,8 +48,8 @@ class RailsappFactory
     end
 
     def rubies(rails_v = nil)
-      # discover rvm / rbenv commands
-      RailsappFactory.ruby_command_prefix_template
+      find_ruby_version_manager
+      ruby_command_prefix_template
       result = if File.exists?(@@rbenv_path)
                  `#{@@rbenv_path} versions --bare`
                elsif File.exists?(@@rvm_path)
@@ -65,30 +65,43 @@ class RailsappFactory
           rails_v.nil? || RailsappFactory.versions(ruby_v).include?(rails_v_compare)
         end
       end
-
     end
 
     def ruby_command_prefix(ruby_v = nil)
       if ruby_v.to_s == ''
         ''
       else
-        RailsappFactory.ruby_command_prefix_template % ruby_v.to_s
+        ruby_command_prefix_template % ruby_v.to_s
       end
     end
 
+    def has_ruby_version_manager?
+      find_ruby_version_manager != ''
+    end
+
+    def rbenv?
+      find_ruby_version_manager
+      @@rbenv_path
+    end
+
+    def rvm?
+      find_ruby_version_manager
+      @@rvm_path
+    end
+
+    def has_ruby_version_manager?
+      find_ruby_version_manager != ''
+    end
+
+    def using_system_ruby?
+      ENV['PATH'] !~ /\/.rvm\/versions\// && ENV['PATH'] !~ /\/.rvm\/rubies\//
+    end
+
+    private
+
     def ruby_command_prefix_template
       @@ruby_command_prefix_template ||= begin
-        if ENV['RBENV_ROOT']
-          @@rbenv_path = "#{ENV['RBENV_ROOT']}/bin/rbenv"
-        elsif ENV['rvm_path']
-          @@rvm_path = "#{ENV['rvm_path']}/bin/rbenv"
-        else
-          ENV['PATH'].split(':').each do |exec_path|
-            @@rbenv_path = "#{$1}/bin/rbenv" if exec_path =~ /^(.*\/\.?rbenv)\/(bin|versions)/
-            @@rvm_path = "#{$1}/bin/rbenv" if exec_path =~ /^(.*\/\.?rvm)\/(bin|versions)/
-            break if @@rbenv_path || @@rvm_path
-          end
-        end
+        find_ruby_version_manager
         if @@rbenv_path
           "env 'RBENV_VERSION=%s' #{@@rbenv_path} exec"
         elsif @@rvm_path
@@ -96,6 +109,35 @@ class RailsappFactory
         else
           ''
         end
+      end
+    end
+
+
+    def find_ruby_version_manager
+      @@found_ruby_version_manager ||= begin
+        @@rbenv_path = nil
+        @@rvm_path = nil
+        if ENV['RBENV_ROOT']
+          @@rbenv_path = "#{ENV['RBENV_ROOT']}/bin/rbenv"
+        elsif ENV['rvm_path']
+          @@rvm_path = "#{ENV['rvm_path']}/bin/rvm"
+        else
+          # RubyMine removes RBENV_PATH when a rbenv environment is selected
+          ENV['PATH'].split(':').each do |exec_path|
+            @@rbenv_path = "#{$1}/bin/rbenv" if exec_path =~ /^(.*\/\.?rbenv)\/(bin|versions)/
+            @@rvm_path = "#{$1}/bin/rbenv" if exec_path =~ /^(.*\/\.?rvm)\/(bin|versions)/
+            break if @@rbenv_path || @@rvm_path
+          end
+          # In case we are running from system ruby and the shell environment is not set
+          unless @@rbenv_path || @@rvm_path
+            if File.exists? "#{ENV['HOME']}/.rbenv/bin/rbenv"
+              @@rbenv_path = "#{ENV['HOME']}/.rbenv/bin/rbenv"
+            elsif File.exists? "#{ENV['HOME']}/.rvm/bin/rvm"
+              @@rvm_path = "#{ENV['HOME']}/.rvm/bin/rvm"
+            end
+          end
+        end
+        @@rbenv_path || @@rvm_path || ''
       end
     end
 

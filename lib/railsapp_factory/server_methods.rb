@@ -24,13 +24,13 @@ class RailsappFactory
         @pid = nil
       end
       if @server_handle
-        @logger.debug "Closing pipe to server process"
+        @logger.debug 'Closing pipe to server process'
         Timeout.timeout(@timeout) do
           @server_handle.close
         end
         @server_handle = nil
       end
-      @logger.info "Server has stopped"
+      @logger.info 'Server has stopped'
     end
 
     def start
@@ -40,7 +40,7 @@ class RailsappFactory
       @port = server.addr[1]
       server.close
       unless @logger.debug?
-        file = Tempfile.new("server_log", base_dir)
+        file = Tempfile.new('server_log', base_dir)
         @server_logfile = file.path
         file.close
       end
@@ -60,7 +60,7 @@ class RailsappFactory
           response = Net::HTTP.get(self.uri)
           if response
             t2 = Time.new
-            @logger.info "Server responded to http GET after %3.1f seconds" % (t2 - t1)
+            @logger.info 'Server responded to http GET after %3.1f seconds' % (t2 - t1)
             serving_requests = true
             break
           end
@@ -70,7 +70,7 @@ class RailsappFactory
           self.logger.debug "Ignoring exception #{ex} whilst waiting for server to start"
         end
       end
-      Kernel.system "ps -f" if defined?(JRUBY_VERSION) #DEBUG
+      Kernel.system 'ps -f' if defined?(JRUBY_VERSION) #DEBUG
       serving_requests
     end
 

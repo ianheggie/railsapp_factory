@@ -7,7 +7,6 @@
 # Template is safe to apply multiple times
 
 
-
 file 'config/preinitializer.rb', <<-EOF
 
 begin
@@ -75,7 +74,7 @@ end
 
 # Check what has already been done
 has_source = false
-has_gem = { }
+has_gem = {}
 if File.exists? 'Gemfile'
   File.open('Gemfile', 'r').each do |line|
     has_source ||= line =~ /^\s*source\s/
@@ -110,7 +109,7 @@ File.open('Gemfile', 'a+') do |gemfile|
       has_gem['rails'] = "gem 'rails', :git => 'git://github.com/makandra/rails.git', :branch => '2-3-lts'"
       gemfile.puts has_gem['rails']
       if rails_gem_version != '2.3.18'
-        puts "WARNING - RAILS_GEM_VERSION needs to be updated to 2.3.18 in config/environment.rb!"
+        puts 'WARNING - RAILS_GEM_VERSION needs to be updated to 2.3.18 in config/environment.rb!'
       end
       puts "    updating  Gemfile - adding rails gem #{rails_gem_version}-lts"
     end
@@ -142,7 +141,7 @@ File.open('Gemfile', 'a+') do |gemfile|
         command.sub!(/:version *=>/, ' ')
         command.sub!(/:lib/, ':require')
         if line =~ /^\s*config.gem\s+['"]([^'"]+)['"]/
-          prefix = "# " if has_gem[$1]
+          prefix = '# ' if has_gem[$1]
           has_gem[$1] = line
           puts "    updating  Gemfile - adding #{$1} gem" if prefix !~ /#/
         end
@@ -155,7 +154,7 @@ File.open('Gemfile', 'a+') do |gemfile|
 
   unless has_gem['json_pure']
     gemfile.puts "gem 'json_pure'  # used by RailsapFactory *_eval methods"
-    puts "    updating  Gemfile - adding json_pure gem # used by RailsapFactory *_eval methods"
+    puts '    updating  Gemfile - adding json_pure gem # used by RailsapFactory *_eval methods'
   end
 
 end
@@ -171,7 +170,7 @@ unless File.exists? bak_name
     File.open(bak_name, 'r').each do |line|
       if line =~ /rake.rdoctask/
         line = "# require 'rdoc/task' # replaces outs of date: #{line}"
-        puts "    updating Rakefile - fixing rake/rdoctask line"
+        puts '    updating Rakefile - fixing rake/rdoctask line'
       end
       f.puts line
     end
@@ -179,8 +178,8 @@ unless File.exists? bak_name
 end
 
 %w{Gemfile config/environment.rb Rakefile}.each do |file|
-  puts "=" * 50,file, "=" * 50
+  puts '=' * 50, file, '=' * 50
   puts File.read(file)
 end
-puts "=" * 50,'END OF TEMPLATE'
+puts '=' * 50, 'END OF TEMPLATE'
 

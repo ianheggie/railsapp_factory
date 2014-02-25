@@ -2,7 +2,7 @@
 # add javascript runtime
 
 if defined?(JRUBY_VERSION)
-  gem "therubyrhino"
+  gem 'therubyrhino'
 else
-  gem "therubyracer"
+  gem 'therubyracer'
 end

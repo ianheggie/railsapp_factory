@@ -32,17 +32,22 @@ class RailsappFactory
   attr_reader :override_ENV
   attr_accessor :gem_source, :db, :timeout, :logger
 
-  def initialize(version, logger = Logger.new(STDERR))
-    @version = version
+  def initialize(version = nil, logger = Logger.new(STDERR))
     @logger = logger
-    throw ArgumentError.new('Invalid version') if version !~ /^[2-9](\.\d+){1,2}(-lts)?$/
-    @logger.info("RailsappFactory initialized with version #{version}")
+    @version = version
+    unless @version
+      @version = RailsappFactory.versions(RUBY_VERSION).last
+    end
+    @logger.info("RailsappFactory.new(#{version.inspect}) called - version set to #{@version}")
+    raise ArgumentError.new("Invalid version (#{@version})") if @version.to_s !~ /^[2-9](\.\d+){1,2}(-lts)?$/
     @gem_source = 'https://rubygems.org'
     @db = defined?(JRUBY_VERSION) ? 'jdbcsqlite3' : 'sqlite3'
     @timeout = 300 # 5 minutes
     @override_ENV = {}
     self.env = 'test'
     clear_template
+    # use default ruby
+    use(nil)
   end
 
 end

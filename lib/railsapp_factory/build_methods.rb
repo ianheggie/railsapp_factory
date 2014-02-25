@@ -9,6 +9,7 @@ class RailsappFactory
       end
       @base_dir = nil
       @built = false
+      @bundled = false
     end
 
     def build
@@ -41,16 +42,22 @@ class RailsappFactory
       expected_file = File.join(root, 'config', 'environment.rb')
       raise BuildError.new("error building railsapp - missing #{expected_file}") unless File.exists?(expected_file)
 
-      @logger.info "Installing binstubs"
-      unless system_in_app "sh -xc 'bundle install --binstubs .bundle/bin' #{append_log 'bundle.log'}"
-        raise BuildError.new("bundle install --binstubs returned exit status #{$?} #{see_log 'bundle.log'}")
+      command = "sh -xc 'bundle install --binstubs .bundle/bin' #{append_log 'bundle.log'}"
+      @logger.info "Installing gems with binstubs using command: #{command}"
+      unless system_in_app command
+        raise BuildError.new("bundle install returned exit status #{$?} #{see_log 'bundle.log'}")
       end
+      @bundled = true
       raise BuildError.new("error installing gems - Gemfile.lock missing #{see_log 'bundle.log'}") unless File.exists?(File.join(root, 'Gemfile.lock'))
       true
     end
 
     def built?
       @built
+    end
+
+    def bundled?
+      @bundled
     end
 
 # release installed as reported by the rails command itself
@@ -71,10 +78,6 @@ class RailsappFactory
     private
 
     def rails_command
-      #ruby_command = Gem.ruby
-      #ruby_command = 'ruby' unless ruby_command =~ /\w/
-      #bundle_command = "#{ruby_command} #{Gem.bin_path('bundler', 'bundle')}"
-      bundle_command = 'bundle' # unless bundle_command =~ /bundle/
       rails_cmd_dir = "#{RailsappFactory::TMPDIR}/rails-#{@version}"
       rails_path = "#{rails_cmd_dir}/bin/rails"
       #command = '"%s" "%s"' % [Gem.ruby, rails_path]
@@ -111,14 +114,14 @@ class RailsappFactory
         gem 'rails', #{version_spec}
       EOF
 
-      File.open("Gemfile", 'w') {|f| f.puts gemfile_content }
+      File.open('Gemfile', 'w') { |f| f.puts gemfile_content }
       @logger.debug "Created Gemfile with: <<\n#{gemfile_content}>>"
     end
 
     def base_dir
       @base_dir ||= begin
         FileUtils.mkdir_p RailsappFactory::TMPDIR
-        Dir.mktmpdir("app-#{@version.gsub(/\W/,'_')}-", RailsappFactory::TMPDIR)
+        Dir.mktmpdir("app-#{@version.gsub(/\W/, '_')}-", RailsappFactory::TMPDIR)
       end
     end
   end
