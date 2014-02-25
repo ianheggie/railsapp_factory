@@ -66,7 +66,7 @@ class RailsappFactory
                   raise ArgumentError.new('invalid evaluate_with argument')
                 end
       system_in_app "sh -xc '#{command} #{expression_file}' #{append_log('eval.log')}"
-      @logger.info("#{evaluate_with}_eval of #{expression} returned exit status of #{$?}")
+      @logger.info("#{evaluate_with}_eval of #{expression} returned exit status of #{$?} - #{expression_file}")
       if File.size?(output_file)
         res = if serialize_with == :json
                 JSON.parse(File.read(output_file))
@@ -74,6 +74,7 @@ class RailsappFactory
                 YAML.load_file(output_file)
               end
         FileUtils.rm_f output_file
+        FileUtils.rm_f expression_file
         if res.include? 'value'
           result = res['value']
         elsif res.include? 'exception'
@@ -86,7 +87,7 @@ class RailsappFactory
           raise result
         end
       else
-        result = ArgumentError.new("unknown error, probably syntax (missing #{output_file}) #{see_log('eval.log')}")
+        result = ArgumentError.new("unknown error, possibly a syntax error, (missing #{output_file}) #{see_log('eval.log')} - #{expression_file} contains:\n#{command}")
         raise result
       end
       result

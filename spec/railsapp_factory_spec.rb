@@ -96,6 +96,8 @@ describe 'RailsappFactory' do
     prefix_string = rubies_ruby_v.sub(/^([a-zA-Z]*).*/, '\1')
     if prefix_string == 'rbx'
       prefix_string = 'rubinius'
+    elsif prefix_string == 'ree'
+        prefix_string = 'Ruby Enterprise Edition'
     elsif prefix_string === ''
       prefix_string = 'ruby'
     end
@@ -477,7 +479,7 @@ describe 'RailsappFactory' do
 
     end
 
-    break unless ENV['TRAVIS'] == 'true'
+    #break unless ENV['TRAVIS'] == 'true'
 
   end
 

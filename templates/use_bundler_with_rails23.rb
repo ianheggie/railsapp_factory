@@ -140,6 +140,8 @@ File.open('Gemfile', 'a+') do |gemfile|
         prefix.sub!(/^\s+/, '')
         command.sub!(/:version *=>/, ' ')
         command.sub!(/:lib/, ':require')
+        command.sub!(/require:/, ':require => ')
+        command.sub!(/lib:/, ':lib => ')
         if line =~ /^\s*config.gem\s+['"]([^'"]+)['"]/
           prefix = '# ' if has_gem[$1]
           has_gem[$1] = line
