@@ -21,7 +21,7 @@ describe 'RailsappFactory' do
 
   shared_examples_for RailsappFactory do
 
-    it "test should be run with a ruby version manager (OTHERWISE LOTS OF TESTS ARE DISABLED!)" do
+    it "A RUBY VERSION MANAGER MUST BE MADE AVAILABLE!!" do
       RailsappFactory.has_ruby_version_manager?.should be_true
     end
 
@@ -82,14 +82,12 @@ describe 'RailsappFactory' do
       end
     end
 
-    it '1: should allow text to be appended to template' do
-      @factory.append_to_template("file 'public/file.txt', 'some text'")
-    end
-
-    describe '2: when built using #build' do
+    describe '2: when built using #build with templates' do
       include SpecHelper
 
       before(:all) do
+        @factory.use_template('spec/templates/add-ruby_version-controller.rb')
+        @factory.use_template('spec/templates/add-file.rb')
         @factory.build
       end
 
@@ -118,10 +116,16 @@ describe 'RailsappFactory' do
         end
       end
 
-      it 'the template should have been processed' do
+      it 'the first template should have been processed' do
+        file = File.join(@factory.root, 'app/controllers/ruby_version_controller.rb')
+        File.exists?(file).should be_true
+        File.open(file).read.should =~ /RUBY_VERSION/
+      end
+
+      it 'the 2nd template should have been processed' do
         file = File.join(@factory.root, 'public/file.txt')
         File.exists?(file).should be_true
-        File.open(file).read.should =~ /some text/
+        File.open(file).read.should =~ /a short poem/
       end
 
       it 'the template should have been cleared' do
@@ -245,25 +249,16 @@ describe 'RailsappFactory' do
         end
       end
 
-      it 'should allow appended templates to be processed after build' do
-        @factory.append_to_template("file '4th-file.txt', 'more text'")
-        @factory.process_template
-        @factory.template.should be_nil
-        file = File.join(@factory.root, '4th-file.txt')
-        File.exists?(file).should be_true
-        File.open(file).read.should =~ /more text/
-      end
-
-      it 'should allow template files to be processed after build' do
+      it 'should allow templates to be processed after build' do
         @factory.use_template('spec/templates/add-yet-another-file.rb')
         @factory.process_template
         @factory.template.should be_nil
-        file = File.join(@factory.root, 'yet-another-file.txt')
+        file = File.join(@factory.root, 'public/yet-another-file.txt')
         File.exists?(file).should be_true
-        File.open(file).read.should =~ /a short poem/
+        File.open(file).read.should =~ /Lorem ipsum/
       end
 
-      describe 'when server is run using #start', :order => :partially_ordered do
+      describe 'when server is run using #start' do
         before(:all) do
           @factory.start.should be_true
         end
@@ -285,9 +280,16 @@ describe 'RailsappFactory' do
           response.should be_an_instance_of(String)
         end
 
-        it 'should serve status files' do
+        it 'should serve static files' do
           response = Net::HTTP.get(@factory.uri('file.txt'))
           response.should be_an_instance_of(String)
+          response.should =~ /a short poem/
+        end
+
+        it 'should serve dynamic page: /ruby_version' do
+          response = Net::HTTP.get(@factory.uri('/ruby_version'))
+          response.should be_an_instance_of(String)
+          response.should include(RUBY_VERSION)
         end
 
         it 'should respond with an error for missing paths' do
@@ -302,21 +304,33 @@ describe 'RailsappFactory' do
         end
       end
 
-      unless RailsappFactory.has_ruby_version_manager?
+      describe "#rubies" do
+
+        it "lists ruby versions that are compatible with this version of rails" do
+          list = @factory.rubies
+          list.should be_a(Array)
+          list.should_not be_empty
+        end
 
         it 'the server should work with all the ruby versions' do
+          @factory.using.should == ''
           @factory.rubies.each do |ruby_v|
+            @factory.logger.info("Checking ruby #{ruby_v} for compatibility with rails #{@factory.version}")
             @factory.use(ruby_v) do
-              begin
-                @factory.start
-                actual_ruby_v = Net::HTTP.get(@factory.uri('/ruby_version'))
-              ensure
-                @factory.stop
-              end
+              @factory.using.should == ruby_v
+              @factory.stop
+              @factory.system_in_app('bundle').should be_true
+              @factory.start.should be_true
+              actual_ruby_v = Net::HTTP.get(@factory.uri('/ruby_version'))
               actual_version_should_match_rubies_version(actual_ruby_v, ruby_v, false)
             end
           end
         end
+
+        it '9: stop server and rerun bundle' do
+          @factory.stop
+          @factory.system_in_app('bundle').should be_true
+         end
       end
 
     end

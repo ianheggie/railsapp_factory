@@ -88,7 +88,7 @@ class RailsappFactory
     end
 
     def find_command(script_name, rails_arg)
-      Dir.chdir(root) do
+      result = Dir.chdir(root) do
         if File.exists?("script/#{script_name}")
           "#{bundle_command} exec script/#{script_name}"
         elsif File.exists?('script/rails')
@@ -97,6 +97,8 @@ class RailsappFactory
           "#{ruby_command(false)} .bundle/bin/rails #{rails_arg}"
         end
       end
+      self.logger.info("find_command(#{script_name.inspect}, #{rails_arg.inspect}) returned #{result.inspect}")
+      result
     end
 
     def generate_command

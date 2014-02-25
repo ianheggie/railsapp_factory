@@ -116,6 +116,7 @@ class RailsappFactory
       else
         arg = "#{command_prefix} #{arg}"
       end
+      self.logger.info("prepend_ruby_version_command_to_arg returned: #{arg.inspect}")
       arg
     end
 
@@ -127,6 +128,7 @@ class RailsappFactory
     private
 
     def setup_env
+      result = nil
       Bundler.with_clean_env do
         self.override_ENV.each do |key, value|
           unless %w{RAILS_ENV RACK_ENV}.include? key
@@ -146,8 +148,10 @@ class RailsappFactory
                            end
         ENV['GEM_SOURCE'] = @gem_source if ENV['RAILS_LTS']
         self.logger.debug "setup_env: setting ENV['GEM_SOURCE'] = #{@gem_source.inspect}, ENV['RAILS_LTS'] = #{ENV['RAILS_LTS'].inspect}" if ENV['RAILS_LTS']
-        yield
+        result = yield
       end
+      result
     end
+
   end
 end
