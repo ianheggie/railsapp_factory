@@ -7,7 +7,7 @@ class RailsappFactory
       query = ''
       args.each do |key, value|
         if value.is_a?(Hash)
-          query <<= RailsappFactory.encode_query(value, "#{prefix}#{key}[", "]#{suffix}")
+          query <<= encode_query(value, "#{prefix}#{key}[", "]#{suffix}")
         else
           query <<= '&' << CGI::escape(prefix + key.to_s + suffix) << '=' << CGI::escape(value.to_s)
         end
@@ -62,7 +62,7 @@ class RailsappFactory
       else
         rails_v_compare = rails_v.sub(/^(\d+\.\d+).*?(-lts)?$/, '\1\2')
         result.select do |ruby_v|
-          rails_v.nil? || RailsappFactory.versions(ruby_v).include?(rails_v_compare)
+          rails_v.nil? || versions(ruby_v).include?(rails_v_compare)
         end
       end
     end
@@ -134,7 +134,7 @@ class RailsappFactory
           end
         end
         @@rbenv_path = nil unless @@rbenv_path && File.exists?(@@rbenv_path)
-        @@rvm_path = nil if @@rbenv_path || ! @@rvm_path || ! File.exists?(@@rvm_path)
+        @@rvm_path = nil if @@rbenv_path || !@@rvm_path || !File.exists?(@@rvm_path)
         @@rbenv_path || @@rvm_path || ''
       end
     end

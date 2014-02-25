@@ -6,6 +6,10 @@ class RailsappFactory
     def process_template
       if @template
         if built?
+          if @version =~ /^2/
+            # recheck config/environment.rb in case the template/s add more config.gem lines
+            use_template 'templates/use_bundler_with_rails23.rb'
+          end
           template_path = @template
           if @template != /^https?:/ && @template != /^\//
             template_path = File.expand_path(template_path, '.')
@@ -27,7 +31,9 @@ class RailsappFactory
         if @template
           text = open(@template).read << text
         end
-        @template = "#{base_dir}/template.rb"
+        template_dir = File.join(base_dir, 'templates')
+        FileUtils.mkdir_p template_dir
+        @template = Tempfile.new(['append_', '.rb'], template_dir).path
         @readonly_template = false
       end
       open(@template, 'a+') do |f|

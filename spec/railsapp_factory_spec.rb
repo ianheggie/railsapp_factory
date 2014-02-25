@@ -1,4 +1,5 @@
 require 'rspec'
+require 'spec_helper'
 require 'net/http'
 
 require 'railsapp_factory'
@@ -14,146 +15,38 @@ describe 'RailsappFactory' do
   end
 
   before(:all) do
-    puts '(DESTROYING ALL)'
+    puts '(before(:all) doing cleanup: rm -rf tmp/railsapp)'
     RailsappFactory.cleanup
-  end
-
-  describe '::versions' do
-
-    it "should list some rails versions that are compatible with ruby #{RUBY_VERSION}" do
-      list = RailsappFactory.versions
-      list.should be_a_kind_of(Array)
-      list.should_not be_empty
-    end
-
-    it 'should return an empty list for unknown ruby versions' do
-      list = RailsappFactory.versions('1.5.0')
-      list.should be_a_kind_of(Array)
-      list.should be_empty
-    end
-
-    # taken from http://www.devalot.com/articles/2012/03/ror-compatibility
-    {
-        '1.something' => [],
-        '1.8.6' => %w{2.3},
-        '1.8.7' => %w{2.3 2.3-lts 3.0 3.1 3.2},
-        '1.9.1' => %w{2.3},
-        '1.9.2' => %w{3.0 3.1 3.2},
-        '1.9.3' => %w{3.0 3.1 3.2 4.0},
-        '2.0.x' => %w{4.0},
-        'unknown' => %w{4.0},
-        '' => %w{2.3 2.3-lts 3.0 3.1 3.2 4.0}
-    }.each do |ruby_v, expected|
-      it "should list rails versions that are compatible with ruby #{ruby_v}" do
-        list = RailsappFactory.versions(ruby_v)
-        list.should be_a_kind_of(Array)
-        list.should == expected
-      end
-    end
-
-  end
-
-  describe '::rubies' do
-
-    it 'should list some ruby versions' do
-      list = RailsappFactory.rubies
-      list.should be_a_kind_of(Array)
-      list.should_not be_empty
-    end
-
-    it 'should return an empty list for unknown rails versions' do
-      list = RailsappFactory.rubies('1.5.0')
-      list.should be_a_kind_of(Array)
-      list.should be_empty
-    end
-
-    RailsappFactory.versions(nil).each do |rails_v|
-      it "should only list ruby versions that are compatible with rails #{rails_v}" do
-        RailsappFactory.rubies(rails_v).each do |ruby_v|
-          RailsappFactory.versions(ruby_v).should include(rails_v)
-        end
-      end
-    end
-  end
-
-  it '::ruby_command_prefix should return a string' do
-    res = RailsappFactory.ruby_command_prefix
-    res.should be_a(String)
-  end
-
-  it '::has_ruby_version_manager? should return a Boolean' do
-    res = RailsappFactory.has_ruby_version_manager?
-    res.should be_a(res ? TrueClass : FalseClass)
-  end
-
-  it '::using_system_ruby? should return a Boolean' do
-    res = RailsappFactory.using_system_ruby?
-    res.should be_a(res ? TrueClass : FalseClass)
-  end
-
-
-  def actual_version_should_match_rubies_version(actual_ruby_v, rubies_ruby_v, expect_prefix_and_patch = true)
-    prefix_string = rubies_ruby_v.sub(/^([a-zA-Z]*).*/, '\1')
-    if prefix_string == 'rbx'
-      prefix_string = 'rubinius'
-    elsif prefix_string == 'ree'
-        prefix_string = 'Ruby Enterprise Edition'
-    elsif prefix_string === ''
-      prefix_string = 'ruby'
-    end
-    ver_string = rubies_ruby_v.sub(/^\D*([\d\.]*).*/, '\1')
-    patch_string = if rubies_ruby_v =~ /.*?-p(\d+).*/
-                     "#{$1}"
-                   end
-    #puts "Matching #{prefix_string.inspect}, #{ver_string.inspect}, #{patch_string.inspect}"
-    actual_ruby_v.should include(ver_string)
-    if expect_prefix_and_patch
-      actual_ruby_v.should include(patch_string) if patch_string
-      actual_ruby_v.should include(prefix_string)
-    end
-  end
-
-  describe '::ruby_command_prefix' do
-
-    RailsappFactory.rubies.each do |ruby_v|
-      it "provides a command prefix that will run ruby #{ruby_v}" do
-        prefix = RailsappFactory.ruby_command_prefix(ruby_v)
-        #puts "RailsappFactory.ruby_command_prefix(#{ruby_v}) = '#{prefix}'"
-        actual_ruby_v=`#{prefix} ruby -v`
-        actual_version_should_match_rubies_version(actual_ruby_v, ruby_v)
-      end
-    end
-
-  end
-
-  describe '::encode_query' do
-
-    it 'should encode a simple argument' do
-      RailsappFactory.encode_query(:ian => 23).should == '?ian=23'
-    end
-
-    it 'should encode a nested argument' do
-      RailsappFactory.encode_query(:author => {:ian => 23}).should == '?author%5Bian%5D=23'
-    end
-
-    it 'should encode a multiple arguments' do
-      res = RailsappFactory.encode_query(:ian => 23, :john => '45')
-      #order not guaranteed
-      if res =~ /^.ian/
-        res.should == '?ian=23&john=45'
-      else
-        res.should == '?john=45&ian=23'
-      end
-    end
-
   end
 
   shared_examples_for RailsappFactory do
 
-    it 'should suggest rubies that can be used with this rails version' do
-      list = @factory.rubies
-      list.should be_a_kind_of(Array)
-      list.should_not be_empty
+    it "test should be run with a ruby version manager (OTHERWISE LOTS OF TESTS ARE DISABLED!)" do
+      RailsappFactory.has_ruby_version_manager?.should be_true
+    end
+
+    describe "Ruby version manager" do
+      before do
+        @ruby_vs = RailsappFactory.rubies(nil).collect {|s| s.sub(/.*?(\d+\.\d+\.\d+).*/, '\1')}
+      end
+
+      it 'must have ruby 1.8.7' do
+        @ruby_vs.should include('1.8.7')
+      end
+
+      it 'must have ruby 1.9.3' do
+        @ruby_vs.should include('1.9.3')
+      end
+
+    end
+
+    unless RailsappFactory.has_ruby_version_manager?
+      it 'should suggest rubies that can be used with this rails version' do
+        list = @factory.rubies
+        list.should be_a_kind_of(Array)
+        list.should_not be_empty
+      end
+
     end
 
     it '#use should set using' do
@@ -202,6 +95,7 @@ describe 'RailsappFactory' do
     end
 
     describe '2: when built using #build' do
+      include SpecHelper
 
       before(:all) do
         @factory.build
@@ -316,49 +210,53 @@ describe 'RailsappFactory' do
         ENV['ARBITRARY_VAR'].should == nil
       end
 
-      it 'ruby_eval should work with all the rubies' do
-        RUBY_VERSION.should == @factory.ruby_eval('RUBY_VERSION')
-        @factory.rubies.each do |ruby_v|
-          @factory.use(ruby_v) do
-            actual_ruby_v = @factory.ruby_eval('RUBY_VERSION')
-            actual_version_should_match_rubies_version(actual_ruby_v, ruby_v, false)
-          end
-        end
-      end
+      unless RailsappFactory.has_ruby_version_manager?
 
-      it 'rails_eval should work with all the rubies' do
-        begin
+        it 'ruby_eval should work with all the rubies' do
           RUBY_VERSION.should == @factory.ruby_eval('RUBY_VERSION')
           @factory.rubies.each do |ruby_v|
-            @factory.use(ruby_v)
-            actual_ruby_v = @factory.rails_eval('RUBY_VERSION')
-            actual_version_should_match_rubies_version(actual_ruby_v, ruby_v, false)
+            @factory.use(ruby_v) do
+              actual_ruby_v = @factory.ruby_eval('RUBY_VERSION')
+              actual_version_should_match_rubies_version(actual_ruby_v, ruby_v, false)
+            end
           end
-        ensure
-          # and nil should return to default
-          @factory.use(nil)
+        end
+
+        it 'rails_eval should work with all the rubies' do
+          begin
+            RUBY_VERSION.should == @factory.ruby_eval('RUBY_VERSION')
+            @factory.rubies.each do |ruby_v|
+              @factory.use(ruby_v)
+              actual_ruby_v = @factory.rails_eval('RUBY_VERSION')
+              actual_version_should_match_rubies_version(actual_ruby_v, ruby_v, false)
+            end
+          ensure
+            # and nil should return to default
+            @factory.use(nil)
+            RUBY_VERSION.should == @factory.ruby_eval('RUBY_VERSION')
+          end
+        end
+
+        it 'shell_eval should work with all the rubies' do
           RUBY_VERSION.should == @factory.ruby_eval('RUBY_VERSION')
-        end
-      end
-
-      it 'shell_eval should work with all the rubies' do
-        RUBY_VERSION.should == @factory.ruby_eval('RUBY_VERSION')
-        @factory.rubies.each do |ruby_v|
-          @factory.use(ruby_v) do
-            actual_ruby_v = @factory.shell_eval('ruby -v')
-            actual_version_should_match_rubies_version(actual_ruby_v, ruby_v)
+          @factory.rubies.each do |ruby_v|
+            @factory.use(ruby_v) do
+              actual_ruby_v = @factory.shell_eval('ruby -v')
+              actual_version_should_match_rubies_version(actual_ruby_v, ruby_v)
+            end
           end
         end
-      end
 
-      it 'system_in_app should work with all the rubies' do
-        RUBY_VERSION.should == @factory.ruby_eval('RUBY_VERSION')
-        @factory.rubies.each do |ruby_v|
-          @factory.use(ruby_v) do
-            tmp_filename = Tempfile.new('ruby_version').path
-            @factory.system_in_app("ruby -v > #{tmp_filename}")
-            actual_ruby_v = File.read(tmp_filename)
-            actual_version_should_match_rubies_version(actual_ruby_v, ruby_v)
+        it 'system_in_app should work with all the rubies' do
+          RUBY_VERSION.should == @factory.ruby_eval('RUBY_VERSION')
+          @factory.rubies.each do |ruby_v|
+            @factory.use(ruby_v) do
+              tmp_filename = Tempfile.new('ruby_version').path
+              @factory.system_in_app("ruby -v > #{tmp_filename}")
+              actual_ruby_v = File.read(tmp_filename)
+              actual_version_should_match_rubies_version(actual_ruby_v, ruby_v)
+              FileUtils.rm_f tmp_filename
+            end
           end
         end
       end
@@ -418,19 +316,23 @@ describe 'RailsappFactory' do
         end
       end
 
-      it 'the server should work with all the ruby versions' do
-        @factory.rubies.each do |ruby_v|
-          @factory.use(ruby_v) do
-            begin
-              @factory.start
-              actual_ruby_v = Net::HTTP.get(@factory.uri('/ruby_version'))
-            ensure
-              @factory.stop
+      unless RailsappFactory.has_ruby_version_manager?
+
+        it 'the server should work with all the ruby versions' do
+          @factory.rubies.each do |ruby_v|
+            @factory.use(ruby_v) do
+              begin
+                @factory.start
+                actual_ruby_v = Net::HTTP.get(@factory.uri('/ruby_version'))
+              ensure
+                @factory.stop
+              end
+              actual_version_should_match_rubies_version(actual_ruby_v, ruby_v, false)
             end
-            actual_version_should_match_rubies_version(actual_ruby_v, ruby_v, false)
           end
         end
       end
+
     end
 
     describe '9: at the end' do
@@ -450,17 +352,15 @@ describe 'RailsappFactory' do
   end
 
   # latest compatible rails version
-  context '::new (latest compatible rails version)' do
+  context '::new (latest compatible version)' do
     before(:all) do
       @factory = RailsappFactory.new()
     end
-
     after(:all) do
       @factory.destroy
     end
 
     it_behaves_like RailsappFactory
-
   end
 
   RailsappFactory.versions.each do |ver|
@@ -471,16 +371,14 @@ describe 'RailsappFactory' do
       @factory.destroy
     end
 
-    next if ver == RailsappFactory.versions.last
+    next if ver == RailsappFactory.versions.last # don't retest last version
 
     context "::new(#{ver})" do
 
       it_behaves_like RailsappFactory
 
     end
-
     #break unless ENV['TRAVIS'] == 'true'
-
   end
 
 end

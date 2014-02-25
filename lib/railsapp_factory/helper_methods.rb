@@ -1,27 +1,60 @@
+require 'logger'
+require 'railsapp_factory/string_inquirer'
+
 class RailsappFactory
   module HelperMethods
+
+    attr_writer :logger
+
+    def override_ENV
+      @override_ENV ||= {}
+    end
+
+    def logger
+      @logger ||= Logger.new(STDERR)
+    end
 
     def uri(path = '', query_args = {})
       URI(self.url(path, query_args))
     end
 
     def url(path = '', query_args = {})
-      "http://127.0.0.1:#{self.port}/" + path.to_s.sub(/^\//, '') + RailsappFactory.encode_query(query_args)
+      "http://127.0.0.1:#{self.port}/" + path.to_s.sub(/^\//, '') + self.class.encode_query(query_args)
     end
 
     def env=(value)
-      @override_ENV['RAILS_ENV'] = value
-      @override_ENV['RACK_ENV'] = value
+      self.override_ENV['RAILS_ENV'] = value
+      self.override_ENV['RACK_ENV'] = value
       self.env
     end
 
     def env
-      @_env = nil unless @_env.to_s == @override_ENV['RAILS_ENV']
-      @_env ||= RailsappFactory::StringInquirer.new(@override_ENV['RAILS_ENV'] || @override_ENV['RACK_ENV'] || 'test')
+      rails_env = self.override_ENV['RAILS_ENV'] || self.override_ENV['RACK_ENV'] || 'test'
+      @_env = nil unless @_env.to_s == rails_env
+      @_env ||= RailsappFactory::StringInquirer.new(rails_env)
     end
 
     def rubies(rails_v = @version)
-      RailsappFactory.rubies(rails_v)
+      self.class.rubies(rails_v)
+    end
+
+    def alive?
+      if @pid
+        begin
+          Process.kill(0, @pid)
+          self.logger.debug "Process #{@pid} is alive"
+          true
+        rescue Errno::EPERM
+          self.logger.warning "Process #{@pid} has changed uid - we will not be able to signal it to finish"
+          true # changed uid
+        rescue Errno::ESRCH
+          self.logger.debug "Process #{@pid} not found"
+          false # NOT running
+        rescue Exception => ex
+          self.logger.warning "Process #{@pid} in unknown state: #{ex}"
+          nil # Unable to determine status
+        end
+      end
     end
 
     private
@@ -37,19 +70,19 @@ class RailsappFactory
     end
 
     def see_log(file)
-      @logger.debug? ? '' : " - see #{file}"
+      self.logger.debug? ? '' : " - see #{file}"
     end
 
     def append_log(file)
-      @logger.debug? ? '' : " >> #{file} 2>&1"
+      self.logger.debug? ? '' : " >> #{file} 2>&1"
     end
 
     def bundle_command
-      "#{RailsappFactory.ruby_command_prefix(@using)} bundle"
+      "#{self.class.ruby_command_prefix(self.using)} bundle"
     end
 
     def ruby_command(bundled = true)
-      "#{RailsappFactory.ruby_command_prefix(@using)} #{bundled ? 'bundle exec' : ''} ruby"
+      "#{self.class.ruby_command_prefix(self.using)} #{bundled ? 'bundle exec' : ''} ruby"
     end
 
     def find_command(script_name, rails_arg)

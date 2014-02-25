@@ -15,3 +15,27 @@ RSpec.configure do |config|
   #     --seed 1234
   config.order = 'random'
 end
+
+module SpecHelper
+  def actual_version_should_match_rubies_version(actual_ruby_v, rubies_ruby_v, expect_prefix_and_patch = true)
+    prefix_string = rubies_ruby_v.sub(/^([a-zA-Z]*).*/, '\1')
+    if prefix_string == 'rbx'
+      prefix_string = 'rubinius'
+    elsif prefix_string == 'ree'
+      prefix_string = 'Ruby Enterprise Edition'
+    elsif prefix_string === ''
+      prefix_string = 'ruby'
+    end
+    ver_string = rubies_ruby_v.sub(/^\D*([\d\.]*).*/, '\1')
+    patch_string = if rubies_ruby_v =~ /.*?-p(\d+).*/
+                     "#{$1}"
+                   end
+    #puts "Matching #{prefix_string.inspect}, #{ver_string.inspect}, #{patch_string.inspect}"
+    actual_ruby_v.should include(ver_string)
+    if expect_prefix_and_patch
+      actual_ruby_v.should include(patch_string) if patch_string
+      actual_ruby_v.should include(prefix_string)
+    end
+  end
+
+end

@@ -29,22 +29,19 @@ class RailsappFactory
   TMPDIR = File.expand_path('tmp/railsapps')
 
   attr_reader :version # version requested, may be specific release, or the first part of a release number
-  attr_reader :override_ENV
   attr_accessor :gem_source, :db, :timeout, :logger
 
   def initialize(version = nil, logger = Logger.new(STDERR))
-    @logger = logger
+    self.logger = logger
     @version = version
     unless @version
       @version = RailsappFactory.versions(RUBY_VERSION).last
     end
-    @logger.info("RailsappFactory.new(#{version.inspect}) called - version set to #{@version}")
+    self.logger.info("RailsappFactory.new(#{version.inspect}) called - version set to #{@version}")
     raise ArgumentError.new("Invalid version (#{@version})") if @version.to_s !~ /^[2-9](\.\d+){1,2}(-lts)?$/
     @gem_source = 'https://rubygems.org'
     @db = defined?(JRUBY_VERSION) ? 'jdbcsqlite3' : 'sqlite3'
     @timeout = 300 # 5 minutes
-    @override_ENV = {}
-    self.env = 'test'
     clear_template
     # use default ruby
     use(nil)
