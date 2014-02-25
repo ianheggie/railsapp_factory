@@ -12,13 +12,14 @@ class RailsappFactory
         begin
           orig_using = @using
           @using = ruby_v.to_s
-          yield
+          result = yield
         ensure
           @using = orig_using
         end
       else
-        @using = ruby_v.to_s
+        result = @using = ruby_v.to_s
       end
+      result
     end
 
     def in_app(in_directory = built? ? root : base_dir)

@@ -50,9 +50,9 @@ class RailsappFactory
     def rubies(rails_v = nil)
       find_ruby_version_manager
       ruby_command_prefix_template
-      result = if File.exists?(@@rbenv_path)
+      result = if @@rbenv_path
                  `#{@@rbenv_path} versions --bare`
-               elsif File.exists?(@@rvm_path)
+               elsif @@rvm_path
                  `#{@@rvm_path} list strings`
                else
                  ''
@@ -94,7 +94,7 @@ class RailsappFactory
     end
 
     def using_system_ruby?
-      ENV['PATH'] !~ /\/.rvm\/versions\// && ENV['PATH'] !~ /\/.rvm\/rubies\//
+      ENV['PATH'] !~ /\/\.?rbenv\/versions\// && ENV['PATH'] !~ /\/\.?rvm\/rubies\//
     end
 
     private
@@ -115,17 +115,13 @@ class RailsappFactory
 
     def find_ruby_version_manager
       @@found_ruby_version_manager ||= begin
-        @@rbenv_path = nil
-        @@rvm_path = nil
-        if ENV['RBENV_ROOT']
-          @@rbenv_path = "#{ENV['RBENV_ROOT']}/bin/rbenv"
-        elsif ENV['rvm_path']
-          @@rvm_path = "#{ENV['rvm_path']}/bin/rvm"
-        else
+        @@rbenv_path = ENV['RBENV_ROOT'] ? "#{ENV['RBENV_ROOT']}/bin/rbenv" : nil
+        @@rvm_path = ENV['rvm_path'] ? "#{ENV['rvm_path']}/bin/rvm" : nil
+        unless @@rbenv_path || @@rvm_path
           # RubyMine removes RBENV_PATH when a rbenv environment is selected
           ENV['PATH'].split(':').each do |exec_path|
             @@rbenv_path = "#{$1}/bin/rbenv" if exec_path =~ /^(.*\/\.?rbenv)\/(bin|versions)/
-            @@rvm_path = "#{$1}/bin/rbenv" if exec_path =~ /^(.*\/\.?rvm)\/(bin|versions)/
+            @@rvm_path = "#{$1}/bin/rbenv" if exec_path =~ /^(.*\/\.?rvm)\/(bin|rubies)/
             break if @@rbenv_path || @@rvm_path
           end
           # In case we are running from system ruby and the shell environment is not set
@@ -137,6 +133,8 @@ class RailsappFactory
             end
           end
         end
+        @@rbenv_path = nil unless @@rbenv_path && File.exists?(@@rbenv_path)
+        @@rvm_path = nil if @@rbenv_path || ! @@rvm_path || ! File.exists?(@@rvm_path)
         @@rbenv_path || @@rvm_path || ''
       end
     end
