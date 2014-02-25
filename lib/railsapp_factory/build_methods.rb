@@ -1,11 +1,24 @@
+require 'fileutils'
+require 'tmpdir'
+require 'railsapp_factory'
+
 class RailsappFactory
   module BuildMethods
+
+    # class variables used in module:
+    # @base_dir
+    # @built
+    # @bundled
+    # @root
+    # @release
+
     def destroy
-      stop
       if @base_dir
+        stop
+        #  keep last built example in last.VERSION
         FileUtils.rm_rf "#{TMPDIR}/last.#{@version}"
         FileUtils.mv @base_dir, "#{TMPDIR}/last.#{@version}" if File.directory?(@base_dir)
-        FileUtils.rm_rf @base_dir
+        FileUtils.rm_rf @base_dir  # to be sure, to be sure!
       end
       @base_dir = nil
       @built = false
@@ -21,9 +34,9 @@ class RailsappFactory
         return false
       end
       self.use_template 'templates/add_json_pure.rb'
-      if @version =~ /^2/
+      if self.version =~ /^2/
         self.use_template 'templates/use_bundler_with_rails23.rb'
-      elsif @version =~ /^3\.[12]/
+      else
         self.use_template 'templates/add_javascript_runtime.rb'
       end
       new_arg = @version =~ /^2/ ? '' : ' new'
@@ -120,8 +133,9 @@ class RailsappFactory
     def base_dir
       @base_dir ||= begin
         FileUtils.mkdir_p RailsappFactory::TMPDIR
-        Dir.mktmpdir("app-#{@version.gsub(/\W/, '_')}-", RailsappFactory::TMPDIR)
+        Dir.mktmpdir("app-#{self.version.gsub(/\W/, '_')}-", RailsappFactory::TMPDIR)
       end
     end
+
   end
 end

@@ -3,24 +3,20 @@ require 'rspec'
 require 'railsapp_factory/class_methods'
 require 'railsapp_factory/helper_methods'
 
-class SubjectClass
-  extend RailsappFactory::ClassMethods
-  include RailsappFactory::HelperMethods
+describe 'RailsappFactory::ClassMethods' do
 
-  def initialize
-    # requires
-    super
+  class SubjectClass
+    extend RailsappFactory::ClassMethods
+    include RailsappFactory::HelperMethods
+
+    # from server_methods
+    attr_accessor :port, :pid
+
+    # from RunInAppMethods
+    attr_accessor :using
+
   end
 
-  # from server_methods
-  attr_accessor :port, :pid
-
-  # from RunInAppMethods
-  attr_accessor :using
-
-end
-
-describe 'RailsappFactory::ClassMethods' do
   subject { SubjectClass.new }
 
   describe "#uri" do

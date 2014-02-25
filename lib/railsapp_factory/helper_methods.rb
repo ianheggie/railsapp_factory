@@ -6,6 +6,8 @@ class RailsappFactory
 
     attr_writer :logger
 
+    attr_accessor :gem_source, :db, :timeout, :logger
+
     def override_ENV
       @override_ENV ||= {}
     end

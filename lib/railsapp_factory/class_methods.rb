@@ -1,4 +1,5 @@
 require 'cgi'
+require 'fileutils'
 
 class RailsappFactory
   module ClassMethods

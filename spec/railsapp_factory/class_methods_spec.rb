@@ -2,11 +2,11 @@ require 'rspec'
 require "spec_helper"
 require 'railsapp_factory/class_methods'
 
-class SubjectClass
-  extend RailsappFactory::ClassMethods
-end
-
 describe 'RailsappFactory::ClassMethods' do
+
+  class SubjectClass
+    extend RailsappFactory::ClassMethods
+  end
 
   describe '::versions' do
 

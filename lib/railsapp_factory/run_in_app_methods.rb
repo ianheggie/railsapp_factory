@@ -1,6 +1,7 @@
 require 'json'
 require 'yaml'
 require 'tempfile'
+require 'fileutils'
 
 class RailsappFactory
   module RunInAppMethods

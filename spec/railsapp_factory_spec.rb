@@ -82,14 +82,6 @@ describe 'RailsappFactory' do
       end
     end
 
-    it '1: should allow a file to be used as a template' do
-      @factory.use_template('spec/templates/add-file.rb')
-    end
-
-    it '1: should allow a url to be used as a template' do
-      @factory.use_template('https://raw2.github.com/ianheggie/railsapp_factory/master/spec/templates/add-another-file.rb')
-    end
-
     it '1: should allow text to be appended to template' do
       @factory.append_to_template("file 'public/file.txt', 'some text'")
     end
@@ -126,22 +118,14 @@ describe 'RailsappFactory' do
         end
       end
 
-      it 'the file template should have been processed' do
-        file = File.join(@factory.root, 'file.txt')
-        File.exists?(file).should be_true
-        File.open(file).read.should =~ /Lorem ipsum/
-      end
-
-      it 'the url template should have been processed' do
-        file = File.join(@factory.root, 'another-file.txt')
-        File.exists?(file).should be_true
-        File.open(file).read.should =~ /Lorem ipsum/
-      end
-
-      it 'the text appended to the template should have been processed' do
+      it 'the template should have been processed' do
         file = File.join(@factory.root, 'public/file.txt')
         File.exists?(file).should be_true
         File.open(file).read.should =~ /some text/
+      end
+
+      it 'the template should have been cleared' do
+        @factory.template.should be_nil
       end
 
       it 'shell_eval should return stdout' do
@@ -264,6 +248,7 @@ describe 'RailsappFactory' do
       it 'should allow appended templates to be processed after build' do
         @factory.append_to_template("file '4th-file.txt', 'more text'")
         @factory.process_template
+        @factory.template.should be_nil
         file = File.join(@factory.root, '4th-file.txt')
         File.exists?(file).should be_true
         File.open(file).read.should =~ /more text/
@@ -272,6 +257,7 @@ describe 'RailsappFactory' do
       it 'should allow template files to be processed after build' do
         @factory.use_template('spec/templates/add-yet-another-file.rb')
         @factory.process_template
+        @factory.template.should be_nil
         file = File.join(@factory.root, 'yet-another-file.txt')
         File.exists?(file).should be_true
         File.open(file).read.should =~ /a short poem/
