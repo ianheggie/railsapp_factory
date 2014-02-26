@@ -36,9 +36,9 @@ class RailsappFactory
       @_env ||= RailsappFactory::StringInquirer.new(rails_env)
     end
 
-    def rubies(rails_v = @version)
-      self.class.rubies(rails_v)
-    end
+    #def rubies(rails_v = @version)
+    #  self.class.rubies(rails_v)
+    #end
 
     def alive?
       if @pid

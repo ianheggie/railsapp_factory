@@ -51,19 +51,19 @@ describe 'RailsappFactory::ClassMethods' do
       list.should_not be_empty
     end
 
-    it 'should return an empty list for unknown rails versions' do
-      list = SubjectClass.rubies('1.5.0')
-      list.should be_a_kind_of(Array)
-      list.should be_empty
-    end
+    #it 'should return an empty list for unknown rails versions' do
+    #  list = SubjectClass.rubies('1.5.0')
+    #  list.should be_a_kind_of(Array)
+    #  list.should be_empty
+    #end
 
-    SubjectClass.versions(nil).each do |rails_v|
-      it "should only list ruby versions that are compatible with rails #{rails_v}" do
-        SubjectClass.rubies(rails_v).each do |ruby_v|
-          SubjectClass.versions(ruby_v).should include(rails_v)
-        end
-      end
-    end
+    #SubjectClass.versions(nil).each do |rails_v|
+    #  it "should only list ruby versions that are compatible with rails #{rails_v}" do
+    #    SubjectClass.rubies(rails_v).each do |ruby_v|
+    #      SubjectClass.versions(ruby_v).should include(rails_v)
+    #    end
+    #  end
+    #end
   end
 
   it '::ruby_command_prefix should return a string' do

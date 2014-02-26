@@ -98,7 +98,7 @@ If you use rvm (eg travis.ci) or rbenv (like I do), then you also go the other w
 and run you tests in a specific version of ruby (eg to use the later syntax), but build and/or run the rails app
 with the various ruby versions you have installed.
 
-It will attempt to find rvm / rbenv through environment variabkes first, the check the PATH, and lastly check the standard install directories under $HOME.
+It will attempt to find rvm / rbenv through environment variables first, the check the PATH, and lastly check the standard install directories under $HOME.
 This handles RubyMine's clearing of environment variables, running rbenv or rvm in command mode only whilst running the system ruby.
 
     RailsappFactory.rubies                    # lists all ruby versions available (in the format the version manager prefers)
@@ -115,6 +115,21 @@ This handles RubyMine's clearing of environment variables, running rbenv or rvm 
         actual_ruby_v=`#{prefix} ruby -v`
       end
     end
+
+### Future Development
+
+At the moment the rubies system isn't smart enough to work out which ruby works with which rails versions,
+nor know the jruby and rbx switches that change the language modes. I intend to develop that area further.
+Suggestions welcome if checking RUBY_VERSION is sufficient, along with checking if the ruby_version changes
+from the default with `JRUBY_OPTS=--1.9, --1.8, --2.0` as well as `RBXOPT=-X18, -X19, -X20, -X21`,
+or if I need to do more.
+
+I am thinking of adding multiple entries in the rubies list for rbx / jruby if the env variables trigger a change in
+RUBY_VERSION, eg:
+* jruby-1.7.9
+* jruby-1.7.9/18mode
+* jruby-1.7.9/19mode
+* jruby-1.7.9/20mode
 
     # example for a rail application
 

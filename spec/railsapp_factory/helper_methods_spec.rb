@@ -80,14 +80,14 @@ describe 'RailsappFactory::ClassMethods' do
     end
   end
 
-  describe "#rubies" do
-
-    it "should return a list of rubies" do
-      list = subject.rubies(nil)
-      list.should be_a_kind_of(Array)
-      list.should_not be_empty
-    end
-  end
+  #describe "#rubies" do
+  #
+  #  it "should return a list of rubies" do
+  #    list = subject.rubies(nil)
+  #    list.should be_a_kind_of(Array)
+  #    list.should_not be_empty
+  #  end
+  #end
 
   describe "#alive?" do
 

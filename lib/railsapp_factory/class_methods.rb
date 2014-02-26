@@ -48,7 +48,7 @@ class RailsappFactory
       end
     end
 
-    def rubies(rails_v = nil)
+    def rubies # (rails_v = nil)
       find_ruby_version_manager
       ruby_command_prefix_template
       result = if @@rbenv_path
@@ -58,14 +58,17 @@ class RailsappFactory
                else
                  ''
                end.split(/\r?\n/)
-      if rails_v.nil?
-        result
-      else
-        rails_v_compare = rails_v.sub(/^(\d+\.\d+).*?(-lts)?$/, '\1\2')
-        result.select do |ruby_v|
-          rails_v.nil? || versions(ruby_v).include?(rails_v_compare)
-        end
-      end
+      # TODO: rework this to run each one and extract the RUBY_VERSION to work out what is compatible
+      # TODO: extend this with JRUBY_OPTS=--1.9, --1.8, --2.0 as well as  RBXOPT=-X18, -X19, -X20, -X21 and check which ones actually change the RUBY_VERSION value
+      # TODO: rbx is outputting an extra nil as it is running as irb sometimes .. test this
+      # if rails_v.nil?
+      #  result
+      #else
+      #  rails_v_compare = rails_v.sub(/^(\d+\.\d+).*?(-lts)?$/, '\1\2')
+      #  result.select do |ruby_v|
+      #    rails_v.nil? || versions(ruby_v).include?(rails_v_compare)
+      #  end
+      #end
     end
 
     def ruby_command_prefix(ruby_v = nil)
@@ -74,10 +77,6 @@ class RailsappFactory
       else
         ruby_command_prefix_template % ruby_v.to_s
       end
-    end
-
-    def has_ruby_version_manager?
-      find_ruby_version_manager != ''
     end
 
     def rbenv?
@@ -99,6 +98,17 @@ class RailsappFactory
     end
 
     private
+
+    def list_rubies
+      find_ruby_version_manager
+      if @@rbenv_path
+         `#{@@rbenv_path} versions --bare`
+       elsif @@rvm_path
+         `#{@@rvm_path} list strings`
+       else
+         ''
+       end.split(/\r?\n/)
+    end
 
     def ruby_command_prefix_template
       @@ruby_command_prefix_template ||= begin
