@@ -74,22 +74,22 @@ describe 'RailsappFactory::TemplateMethods' do
     File.read(subject.template).should include("\ngem 'json_pure'\n")
   end
 
-  it '#use_template(template) should append text to a template from a local file' do
-    subject.use_template('https://raw2.github.com/ianheggie/railsapp_factory/master/templates/add_javascript_runtime.rb')
+  it '#use_template(template) should append text to a template from a remote file' do
+    subject.use_template('https://raw2.github.com/ianheggie/railsapp_factory/master/templates/pec/templates/add-file.rb')
     File.exist?(subject.template).should be_true
-    File.read(subject.template).should include("therubyracer")
+    File.read(subject.template).should include("file.txt")
   end
 
   it 'should merge the contents of multiple appends and use_template calls' do
     subject.append_to_template('gem "one"')
     subject.use_template('templates/add_json_pure.rb')
     subject.append_to_template('gem "two"')
-    subject.use_template('https://raw2.github.com/ianheggie/railsapp_factory/master/templates/add_javascript_runtime.rb')
+    subject.use_template('https://raw2.github.com/ianheggie/railsapp_factory/master/spec/templates/add-file.rb')
     File.exist?(subject.template).should be_true
     File.read(subject.template).should include("\ngem \"one\"\n")
     File.read(subject.template).should include("\ngem \"two\"\n")
     File.read(subject.template).should include("\ngem 'json_pure'\n")
-    File.read(subject.template).should include("therubyracer")
+    File.read(subject.template).should include("file.txt")
   end
 
 

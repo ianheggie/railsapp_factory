@@ -31,6 +31,7 @@ To test a gem (health_check in this case), run:
    RailsappFactory.versions.each do |version|
      railsapp = RailsappFactory.new(version)  # also accepts "edge"
      railsapp.timeout = 300  # timeout operations after 300 seconds
+     railsapp.db = 'mysql2'   # database gem to use
      railsapp.template = File.expand_path('templates/add-file.rb', File.dirname(__FILE__)) # ie full path name
      # OR
      railsapp.template = "http://example.com/example.rb"

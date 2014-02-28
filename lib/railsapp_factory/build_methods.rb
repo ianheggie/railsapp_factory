@@ -37,7 +37,7 @@ class RailsappFactory
       if self.version =~ /^2/
         self.use_template 'templates/use_bundler_with_rails23.rb'
       else
-        self.use_template 'templates/add_javascript_runtime.rb'
+        self.use_template 'templates/add_necessary_gems.rb'
       end
       new_arg = @version =~ /^2/ ? '' : ' new'
       other_args = @version =~ /^2/ ? '' : '--no-rc --skip-bundle --force'
