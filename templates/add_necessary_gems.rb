@@ -13,13 +13,13 @@ gemfile.each do |line|
   line.sub!(/"([^"']+)"/, '\'\1\'')
   line.sub!(/platform:/, ':platform =>')
   line.sub!(/require:/, ':require =>')
-  if line.sub!(/^\s*(gem\s*['"]sqlite3['"])\s$/, '\1, :platform => :mri')
+  # see http://docs.travis-ci.com/user/database-setup/
+  if line.sub!(/^\s*(gem\s*['"]sqlite3['"])\s*$/, '\1, :platform => [:ruby, :mswin, :mingw]')
     puts "Changing gem sqlite to handle multiple platforms"
-    gemfile <<= "gem 'sqlite3-ruby', :require => 'sqlite3', platform: :rbx"
-    gemfile <<= "gem 'activerecord-sqlite3-adapter', platform: :jruby"
+    gemfile <<= "gem 'jdbc-sqlite3', platform: :jruby"
   end
 
-  if line.sub!(/^\s*gem\s*['"]mysql2?['"]\s$/, '\0, :platform => :ruby')
+  if line.sub!(/^\s*gem\s*['"]mysql2?['"]\s*$/, '\0, :platform => :ruby')
     puts "Changing gem mysql to handle multiple platforms"
     gemfile <<= "gem 'activerecord-jdbcmysql-adapter', platform: :jruby"
   end
