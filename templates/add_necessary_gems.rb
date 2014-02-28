@@ -13,8 +13,9 @@ gemfile.each do |line|
   line.sub!(/"([^"']+)"/, '\'\1\'')
   line.sub!(/platform:/, ':platform =>')
   line.sub!(/require:/, ':require =>')
-  if line.sub!(/^\s*(gem\s*['"]sqlite3['"])\s$/, '\1, :platform => :ruby')
+  if line.sub!(/^\s*(gem\s*['"]sqlite3['"])\s$/, '\1, :platform => :mri')
     puts "Changing gem sqlite to handle multiple platforms"
+    gemfile <<= "gem 'sqlite3-ruby', :require => 'sqlite3', platform: :rbx"
     gemfile <<= "gem 'activerecord-sqlite3-adapter', platform: :jruby"
   end
 
@@ -35,7 +36,7 @@ gemfile <<= "gem 'therubyracer', :platform => :ruby"
 cleaned_up_gemfile = [ ]
 gemfile.each do |line|
   unless line =~ /^gem / && cleaned_up_gemfile.include?(line)
-    puts "Keeping: [#{line}]"
+    #puts "Keeping: [#{line}]"
     cleaned_up_gemfile << line
   end
 end
