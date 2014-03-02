@@ -11,16 +11,16 @@ class RailsappFactory
   class StringInquirer < String
     private
 
-      def respond_to_missing?(method_name, include_private = false)
-        method_name.to_s[-1,1] == '?'
-      end
+    def respond_to_missing?(method_name, include_private = false)
+      method_name.to_s[-1, 1] == '?'
+    end
 
-      def method_missing(method_name, *arguments)
-        if method_name.to_s[-1,1] == '?'
-          self == method_name.to_s[0..-2]
-        else
-          super
-        end
+    def method_missing(method_name, *arguments)
+      if method_name.to_s[-1, 1] == '?'
+        self == method_name.to_s[0..-2]
+      else
+        super
       end
+    end
   end
 end
