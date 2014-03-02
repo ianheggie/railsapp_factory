@@ -10,7 +10,7 @@ Gem::Specification.new do |spec|
   spec.email         = ['ian@heggie.biz']
   spec.description   = %q{Rails application factory to make testing gems against multiple versions easier}
   spec.summary       = %q{The prupose of this gem is to make integration testing of gems and libraries against multiple versions of rails easy and avoid having to keep copies of the framework in the gem being tested}
-  spec.homepage      = ''
+  spec.homepage      = 'https://github.com/ianheggie/railsapp_factory'
   spec.license       = 'MIT'
 
   spec.files         = `git ls-files`.split($/)
