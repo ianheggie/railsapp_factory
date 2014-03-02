@@ -2,6 +2,8 @@
 
 Rails application factory to make testing gems against multiple versions easier
 
+[![Build Status](https://travis-ci.org/ianheggie/railsapp_factory.png)](https://travis-ci.org/ianheggie/railsapp_factory)
+
 ## Installation
 
 Add this line to your application's Gemfile:
