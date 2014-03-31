@@ -97,6 +97,8 @@ To test a gem (health_check in this case), run:
    # removes all temp directories - TODO: stop any running servers
    RailsappFactory.cleanup
 
+### Experimental Features
+
 If you use rvm (eg travis.ci) or rbenv (like I do), then you also go the other way,
 and run you tests in a specific version of ruby (eg to use the later syntax), but build and/or run the rails app
 with the various ruby versions you have installed.
