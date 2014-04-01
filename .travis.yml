@@ -33,6 +33,7 @@ matrix:
     - rvm: jruby-head
     - rvm: ruby-head
     - rvm: rbx
+    - rvm: 2.1.0
   include:
     # set RUBYGEMS_VERSION=1.8.25 for ruby 1.8.7 to avoid "undefined method `source_index' for Gem:Module" errors
     - rvm: 1.8.7

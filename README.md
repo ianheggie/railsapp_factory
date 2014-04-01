@@ -26,8 +26,6 @@ To get the list of available versions (that can be run with the ruby version you
 
 Depending on the ruby version in use, it will suggest versions '2.3', '3.0', '3.1', '3.2' and '4.0'. The latest in each series will be downloaded. You can also specify a specific version, eg '3.2.8' or 'edge' (edge has to be selected manually as unforsean changes may break the standard build process).
 
-The INTENT is to end up with:
-
 To test a gem (health_check in this case), run:
 ```ruby
     RailsappFactory.versions.each do |version|
