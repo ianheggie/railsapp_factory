@@ -31,7 +31,7 @@ class RailsappFactory
     self.logger = logger
     @version = version
     unless @version
-      @version = RailsappFactory.versions(RUBY_VERSION).last || '4.0'
+      @version = RailsappFactory.versions(RUBY_VERSION).last || '4.1'
     end
     self.logger.info("RailsappFactory.new(#{version.inspect}) called - version set to #{@version}")
     raise ArgumentError.new("Invalid version (#{@version})") if @version.to_s !~ /^[2-9](\.\d+){1,2}(-lts)?$/
