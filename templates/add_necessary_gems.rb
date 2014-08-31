@@ -28,6 +28,11 @@ gemfile.each do |line|
     puts "Changing gem therubyracer to enable and handle multiple platforms"
     gemfile <<= "gem 'therubyrhino', :platform => :jruby"
   end
+
+  if line =~ /^gem\s*['"]coffee/
+    # execjs changed to ruby 1.9 only at 2.2.0
+    gemfile <<= "gem 'execjs', '< 2.2.0', :platform => :ruby_18"
+  end
 end
 
 gemfile <<= "gem 'therubyrhino', :platform => :jruby"
