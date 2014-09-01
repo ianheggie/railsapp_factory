@@ -30,8 +30,8 @@ gemfile.each do |line|
   end
 
   if line =~ /^gem\s*['"]coffee/
-    # execjs changed to ruby 1.9 only at 2.2.0
-    gemfile <<= "gem 'execjs', '< 2.2.0', :platform => :ruby_18"
+    puts "Locking version of execjs to <2.2"
+    gemfile <<= "gem 'execjs', '< 2.2', :platform => :ruby_18"
   end
 end
 
@@ -48,14 +48,16 @@ gemfile.each do |line|
 end
 
 if cleaned_up_gemfile != gemfile0
-  puts 'Updating Gemfile'
+  puts 'Outputting Updated Gemfile'
   FileUtils.rm_f 'Gemfile.bak'
   FileUtils.move 'Gemfile', 'Gemfile.bak'
   File.open('Gemfile', 'w') do |f|
     cleaned_up_gemfile.each do |line|
+      puts line
       f.puts line
     end
   end
+  puts '# END OF GEMFILE'
 end
 
 
