@@ -5,52 +5,71 @@
 
 require 'fileutils'
 
-gemfile = open('Gemfile').collect {|line| line.chomp}
-gemfile0 = gemfile.dup
+module Templates
+  class AddNeccessaryGems
 
-gemfile.each do |line|
-  # change to single quotes
-  line.sub!(/"([^"']+)"/, '\'\1\'')
-  line.sub!(/platform:/, ':platform =>')
-  line.sub!(/require:/, ':require =>')
-  # see http://docs.travis-ci.com/user/database-setup/
-  if line.sub!(/^\s*(gem\s*['"]sqlite3['"])\s*$/, '\1, :platform => [:ruby, :mswin, :mingw]')
-    puts "Changing gem sqlite to handle multiple platforms"
-    gemfile <<= "gem 'jdbc-sqlite3', platform: :jruby"
-  end
+    def self.run
+      gemfile = open('Gemfile').collect {|line| line.chomp}
+      gemfile0 = gemfile.dup
 
-  if line.sub!(/^\s*gem\s*['"]mysql2?['"]\s*$/, '\0, :platform => :ruby')
-    puts "Changing gem mysql to handle multiple platforms"
-    gemfile <<= "gem 'activerecord-jdbcmysql-adapter', platform: :jruby"
-  end
+      rails_version = ''
 
-  if line.sub!(/^[#\s]*(gem\s*['"]therubyracer['"])\s*$/, '\1, :platform => :ruby')
-    puts "Changing gem therubyracer to enable and handle multiple platforms"
-    gemfile <<= "gem 'therubyrhino', :platform => :jruby"
-  end
-end
+      gemfile.each do |line|
+        # change to single quotes
+        line.sub!(/"([^"']+)"/, '\'\1\'')
+        line.sub!(/platform:/, ':platform =>')
+        line.sub!(/require:/, ':require =>')
+        if line =~ /^\s*gem\s*'rails',\s*'([^']+)/
+          rails_version = $1
+          puts "Detected rails version: #{rails_version}"
+        end
+        # see http://docs.travis-ci.com/user/database-setup/
+        if line.sub!(/^\s*(gem\s*['"]sqlite3['"])\s*$/, '\1, :platform => [:ruby, :mswin, :mingw]')
+          puts "Changing gem sqlite to handle multiple platforms"
+          gemfile <<= "gem 'jdbc-sqlite3', platform: :jruby"
+        end
 
-gemfile <<= "gem 'therubyrhino', :platform => :jruby"
-gemfile <<= "gem 'therubyracer', :platform => :ruby"
-gemfile <<= "gem 'i18n', '~> 0.6.11' if RUBY_VERSION < '1.9.3'"
+        if line.sub!(/^\s*gem\s*['"]mysql2?['"]\s*$/, '\0, :platform => :ruby')
+          puts "Changing gem mysql to handle multiple platforms"
+          gemfile <<= "gem 'activerecord-jdbcmysql-adapter', platform: :jruby"
+        end
 
-cleaned_up_gemfile = [ ]
-gemfile.each do |line|
-  unless line =~ /^gem / && cleaned_up_gemfile.include?(line)
-    #puts "Keeping: [#{line}]"
-    cleaned_up_gemfile << line
-  end
-end
+        # if line.sub!(/^[#\s]*(gem\s*['"]therubyracer['"])\s*$/, '\1, :platform => :ruby')
+        #   puts "Changing gem therubyracer to enable and handle multiple platforms"
+        #   gemfile <<= "gem 'therubyrhino', :platform => :jruby"
+        # end
+      end
+      if rails_version >= '3'
+        gemfile <<= "gem 'therubyrhino', :platform => :jruby"
+        gemfile <<= "gem 'therubyracer', :platform => :ruby"
+        gemfile <<= "gem 'i18n', '~> 0.6.11' if RUBY_VERSION < '1.9.3'"
+      end
 
-if cleaned_up_gemfile != gemfile0
-  puts 'Updating Gemfile'
-  FileUtils.rm_f 'Gemfile.bak'
-  FileUtils.move 'Gemfile', 'Gemfile.bak'
-  File.open('Gemfile', 'w') do |f|
-    cleaned_up_gemfile.each do |line|
-      f.puts line
+      cleaned_up_gemfile = [ ]
+      gemfile.each do |line|
+        unless line =~ /^gem / && cleaned_up_gemfile.include?(line)
+          #puts "Keeping: [#{line}]"
+          cleaned_up_gemfile << line
+        end
+      end
+
+      if cleaned_up_gemfile != gemfile0
+        puts 'Updating Gemfile'
+        FileUtils.rm_f 'Gemfile.bak'
+        FileUtils.move 'Gemfile', 'Gemfile.bak'
+        File.open('Gemfile', 'w') do |f|
+          cleaned_up_gemfile.each do |line|
+            f.puts line
+          end
+        end
+      end
+
     end
   end
+end
+
+if __FILE__==$0
+  Templates::AddNeccessaryGems.run
 end
 
 

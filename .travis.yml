@@ -11,8 +11,6 @@ before_install:
   - bundle --version
   - mkdir -p tmp/bundle
 
-bundler_args: "--binstubs"
-
 rvm: 
   # - 1.8.7 - include below so RUBYGEMS version gets set
   - 1.9.2
@@ -25,7 +23,7 @@ rvm:
   - jruby-head
   - ruby-head
 
-script: bin/rake build spec install
+script: bundle exec rake build spec install
 
 matrix:
   allow_failures:
