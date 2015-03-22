@@ -126,6 +126,7 @@ class RailsappFactory
 
     def find_ruby_version_manager
       @@found_ruby_version_manager ||= begin
+
         @@rbenv_path = ENV['RBENV_ROOT'] ? "#{ENV['RBENV_ROOT']}/bin/rbenv" : nil
         @@rvm_path = ENV['rvm_path'] ? "#{ENV['rvm_path']}/bin/rvm" : nil
         unless @@rbenv_path || @@rvm_path

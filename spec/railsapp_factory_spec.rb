@@ -120,7 +120,7 @@ describe 'RailsappFactory' do
       it 'the first template should have been processed' do
         file = File.join(@factory.root, 'app/controllers/ruby_version_controller.rb')
         File.exists?(file).should be_true
-        File.open(file).read.should =~ /RUBY_VERSION/
+        File.open(file).read.should =~ /The ruby version is .*RUBY_VERSION/
       end
 
       it 'the 2nd template should have been processed' do
@@ -289,8 +289,9 @@ describe 'RailsappFactory' do
 
         it 'should serve dynamic page: /ruby_version' do
           response = Net::HTTP.get(@factory.uri('/ruby_version'))
+          response.code.should == 200
           response.should be_an_instance_of(String)
-          response.should include(RUBY_VERSION)
+          response.should include("The ruby version is #{RUBY_VERSION}")
         end
 
         it 'should respond with an error for missing paths' do
