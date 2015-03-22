@@ -3,7 +3,6 @@ require 'tmpdir'
 require 'railsapp_factory'
 
 # require_relative isn't available in ruby < 1.9.2
-require(File.expand_path('../../templates/add_necessary_gems.rb', File.dirname(__FILE__)))
 
 class RailsappFactory
   module BuildMethods
@@ -128,13 +127,11 @@ class RailsappFactory
         source '#{@gem_source}'
         gem 'rails', #{version_spec}
       EOF
+      if @version >= '3'
+        gemfile_content <<= "gem 'i18n', '~> 0.6.11' if RUBY_VERSION < '1.9.3'"
+      end
 
       File.open('Gemfile', 'w') { |f| f.puts gemfile_content }
-
-      if @version !~ /^2/
-        self.logger.debug "Running templates/add_necessary_gems"
-        Templates::AddNeccessaryGems.run
-      end
 
       self.logger.debug "Created Gemfile with: <<\n#{gemfile_content}>>"
     end
