@@ -42,9 +42,9 @@ class RailsappFactory
           []
         when ''
           # all
-          %w{2.3 2.3-lts 3.0 3.1 3.2 4.0 4.1}
+          %w{2.3 2.3-lts 3.0 3.1 3.2 4.0 4.1 4.2}
         else
-          %w{4.1} # a guess!
+          %w{4.2} # a guess!
       end
     end
 

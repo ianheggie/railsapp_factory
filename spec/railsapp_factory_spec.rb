@@ -289,7 +289,6 @@ describe 'RailsappFactory' do
 
         it 'should serve dynamic page: /ruby_version' do
           response = Net::HTTP.get(@factory.uri('/ruby_version'))
-          response.code.should == 200
           response.should be_an_instance_of(String)
           response.should include("The ruby version is #{RUBY_VERSION}")
         end

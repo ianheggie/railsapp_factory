@@ -30,10 +30,10 @@ describe 'RailsappFactory::ClassMethods' do
         '1.9.1' => %w{2.3},
         '1.9.2' => %w{3.0 3.1 3.2},
         '1.9.3' => %w{3.0 3.1 3.2 4.0 4.1},
-        '2.0.x' => %w{4.0 4.1},
-        '2.1.x' => %w{4.0 4.1},
-        'unknown' => %w{4.1},
-        '' => %w{2.3 2.3-lts 3.0 3.1 3.2 4.0 4.1}
+        '2.0.x' => %w{4.0 4.1 4.2},
+        '2.1.x' => %w{4.0 4.1 4.2},
+        'unknown' => %w{4.2},
+        '' => %w{2.3 2.3-lts 3.0 3.1 3.2 4.0 4.1 4.2}
     }.each do |ruby_v, expected|
       it "should list rails versions that are compatible with ruby #{ruby_v}" do
         list = SubjectClass.versions(ruby_v)
