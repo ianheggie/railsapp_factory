@@ -75,7 +75,7 @@ describe 'RailsappFactory::TemplateMethods' do
   end
 
   it '#use_template(template) should append text to a template from a remote file' do
-    subject.use_template('https://raw2.github.com/ianheggie/railsapp_factory/master/spec/templates/add-file.rb')
+    subject.use_template('https://github.com/ianheggie/railsapp_factory/raw/master/spec/templates/add-file.rb')
     File.exist?(subject.template).should be_true
     File.read(subject.template).should include("file.txt")
   end
@@ -84,7 +84,7 @@ describe 'RailsappFactory::TemplateMethods' do
     subject.append_to_template('gem "one"')
     subject.use_template('templates/add_json_pure.rb')
     subject.append_to_template('gem "two"')
-    subject.use_template('https://raw2.github.com/ianheggie/railsapp_factory/master/spec/templates/add-file.rb')
+    subject.use_template('https://github.com/ianheggie/railsapp_factory/raw/master/spec/templates/add-file.rb')
     File.exist?(subject.template).should be_true
     File.read(subject.template).should include("\ngem \"one\"\n")
     File.read(subject.template).should include("\ngem \"two\"\n")
