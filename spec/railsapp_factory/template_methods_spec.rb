@@ -35,13 +35,13 @@ describe 'RailsappFactory::TemplateMethods' do
 
       it "should have contents" do
         subject.template.should_not be_nil
-        File.size?(subject.template).should be_true
+        File.size?(subject.template).should be_truthy
       end
 
       describe "before build" do
         before { subject.stub(:built?).and_return(false) }
         it "should call build" do
-          subject.built?.should be_false
+          subject.built?.should be_falsey
           subject.should_receive(:build).with()
           subject.process_template
           # checked elsewhere that build clears the template
@@ -63,20 +63,20 @@ describe 'RailsappFactory::TemplateMethods' do
   it '#append_to_template(text) should append text to a template' do
     subject.append_to_template('gem "one"')
     subject.append_to_template('gem "two"')
-    File.exist?(subject.template).should be_true
+    File.exist?(subject.template).should be_truthy
     File.read(subject.template).should include("\ngem \"one\"\n")
     File.read(subject.template).should include("\ngem \"two\"\n")
   end
 
   it '#use_template(template) should append text to a template from a local file' do
     subject.use_template('templates/add_json_pure.rb')
-    File.exist?(subject.template).should be_true
+    File.exist?(subject.template).should be_truthy
     File.read(subject.template).should include("\ngem 'json_pure'\n")
   end
 
   it '#use_template(template) should append text to a template from a remote file' do
     subject.use_template('https://github.com/ianheggie/railsapp_factory/raw/master/spec/templates/add-file.rb')
-    File.exist?(subject.template).should be_true
+    File.exist?(subject.template).should be_truthy
     File.read(subject.template).should include("file.txt")
   end
 
@@ -85,7 +85,7 @@ describe 'RailsappFactory::TemplateMethods' do
     subject.use_template('templates/add_json_pure.rb')
     subject.append_to_template('gem "two"')
     subject.use_template('https://github.com/ianheggie/railsapp_factory/raw/master/spec/templates/add-file.rb')
-    File.exist?(subject.template).should be_true
+    File.exist?(subject.template).should be_truthy
     File.read(subject.template).should include("\ngem \"one\"\n")
     File.read(subject.template).should include("\ngem \"two\"\n")
     File.read(subject.template).should include("\ngem 'json_pure'\n")

@@ -22,7 +22,7 @@ describe 'RailsappFactory' do
   shared_examples_for RailsappFactory do
 
     it "A RUBY VERSION MANAGER MUST BE MADE AVAILABLE!!" do
-      RailsappFactory.has_ruby_version_manager?.should be_true
+      RailsappFactory.has_ruby_version_manager?.should be_truthy
     end
 
     describe "Ruby version manager" do
@@ -119,13 +119,13 @@ describe 'RailsappFactory' do
 
       it 'the first template should have been processed' do
         file = File.join(@factory.root, 'app/controllers/ruby_version_controller.rb')
-        File.exists?(file).should be_true
+        File.exists?(file).should be_truthy
         File.open(file).read.should =~ /The ruby version is .*RUBY_VERSION/
       end
 
       it 'the 2nd template should have been processed' do
         file = File.join(@factory.root, 'public/file.txt')
-        File.exists?(file).should be_true
+        File.exists?(file).should be_truthy
         File.open(file).read.should =~ /a short poem/
       end
 
@@ -255,13 +255,13 @@ describe 'RailsappFactory' do
         @factory.process_template
         @factory.template.should be_nil
         file = File.join(@factory.root, 'public/yet-another-file.txt')
-        File.exists?(file).should be_true
+        File.exists?(file).should be_truthy
         File.open(file).read.should =~ /Lorem ipsum/
       end
 
       describe 'when server is run using #start' do
         before(:all) do
-          @factory.start.should be_true
+          @factory.start.should be_truthy
         end
 
         after(:all) do
@@ -300,7 +300,7 @@ describe 'RailsappFactory' do
         end
 
         it '9: stop should stop the application' do
-          @factory.stop.should be_true
+          @factory.stop.should be_truthy
           @factory.should_not be_alive
         end
       end
@@ -322,8 +322,8 @@ describe 'RailsappFactory' do
       #      @factory.use(ruby_v) do
       #        @factory.using.should == ruby_v
       #        @factory.stop
-      #        @factory.system_in_app('bundle').should be_true
-      #        @factory.start.should be_true
+      #        @factory.system_in_app('bundle').should be_truthy
+      #        @factory.start.should be_truthy
       #        actual_ruby_v = Net::HTTP.get(@factory.uri('/ruby_version'))
       #        actual_version_should_match_rubies_version(actual_ruby_v, ruby_v, false)
       #      end
@@ -332,7 +332,7 @@ describe 'RailsappFactory' do
       #
       #  it '9: stop server and rerun bundle' do
       #    @factory.stop
-      #    @factory.system_in_app('bundle').should be_true
+      #    @factory.system_in_app('bundle').should be_truthy
       #   end
       #end
 
@@ -348,7 +348,7 @@ describe 'RailsappFactory' do
       it '9: destroy should remove the root directory' do
         root = @factory.root
         @factory.destroy
-        File.directory?(root).should be_false if root
+        File.directory?(root).should be_falsey if root
       end
     end
 

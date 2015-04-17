@@ -66,7 +66,7 @@ describe 'RailsappFactory::ClassMethods' do
     end
 
     it "should be reflected in env" do
-      subject.env.test?.should be_false
+      subject.env.test?.should be_falsey
       subject.env.should be_development
     end
 

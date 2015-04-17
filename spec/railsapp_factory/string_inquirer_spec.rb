@@ -14,11 +14,11 @@ describe 'RailsappFactory::StringInquirer' do
   end
 
   it 'should respond to example_string? with true' do
-    subject.example_string?.should be_true
+    subject.example_string?.should be_truthy
   end
 
   it 'should respond to all other questions with false' do
-    subject.test?.should be_false
+    subject.test?.should be_falsey
   end
 
 end
